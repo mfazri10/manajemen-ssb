@@ -368,6 +368,147 @@ CREATE TABLE turnamen_peserta (
 );
 
 -- ============================================
+-- NOTIFIKASI & PESAN
+-- ============================================
+
+-- Notifikasi
+CREATE TABLE notifikasi (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    akademi_id UUID NOT NULL REFERENCES akademi(id) ON DELETE CASCADE,
+    penerima_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    judul VARCHAR(200) NOT NULL,
+    isi TEXT NOT NULL,
+    tipe VARCHAR(20) DEFAULT 'info' CHECK (tipe IN ('info', 'pengumuman', 'spp', 'jadwal', 'absensi', 'turnamen')),
+    target VARCHAR(20) DEFAULT 'semua' CHECK (target IN ('semua', 'siswa', 'orang_tua', 'pelatih', 'per_siswa')),
+    siswa_id UUID REFERENCES siswa(id) ON DELETE CASCADE,
+    is_read BOOLEAN DEFAULT FALSE,
+    sent_via VARCHAR(20) DEFAULT 'in_app' CHECK (sent_via IN ('in_app', 'push', 'wa', 'email')),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ============================================
+-- MATERI LATIHAN / KURIKULUM
+-- ============================================
+
+-- Kategori Materi
+CREATE TABLE materi_kategori (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    akademi_id UUID NOT NULL REFERENCES akademi(id) ON DELETE CASCADE,
+    nama VARCHAR(100) NOT NULL,
+    urutan INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Materi Latihan
+CREATE TABLE materi_latihan (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    akademi_id UUID NOT NULL REFERENCES akademi(id) ON DELETE CASCADE,
+    kategori_id UUID REFERENCES materi_kategori(id) ON DELETE SET NULL,
+    kelompok_umur_id UUID REFERENCES kelompok_umur(id) ON DELETE SET NULL,
+    judul VARCHAR(200) NOT NULL,
+    deskripsi TEXT,
+    durasi_menit INT,
+    level VARCHAR(20) DEFAULT 'pemula' CHECK (level IN ('pemula', 'menengah', 'lanjutan')),
+    tipe VARCHAR(20) DEFAULT 'teknik' CHECK (tipe IN ('teknik', 'fisik', 'taktik', 'mental', 'permainan')),
+    instruksi TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ============================================
+-- LOG AKTIVITAS PELATIH
+-- ============================================
+
+CREATE TABLE log_pelatih (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    pelatih_id UUID NOT NULL REFERENCES pelatih(id) ON DELETE CASCADE,
+    jadwal_id UUID REFERENCES jadwal_latihan(id) ON DELETE SET NULL,
+    tanggal DATE NOT NULL,
+    kegiatan VARCHAR(200) NOT NULL,
+    materi_id UUID REFERENCES materi_latihan(id) ON DELETE SET NULL,
+    catatan TEXT,
+    durasi_menit INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ============================================
+-- MATCH / PERTANDINGAN (Detail per Pertandingan)
+-- ============================================
+
+-- Match (detail pertandingan dalam 1 turnamen)
+CREATE TABLE match (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    turnamen_id UUID NOT NULL REFERENCES turnamen(id) ON DELETE CASCADE,
+    babak VARCHAR(30) DEFAULT 'penyisihan' CHECK (babak IN ('penyisihan', 'perempat_final', 'semi_final', 'final', 'grup', 'friendly')),
+    match_no INT,
+    tanggal DATE,
+    waktu TIME,
+    lokasi VARCHAR(200),
+    tim_home VARCHAR(100),
+    tim_away VARCHAR(100),
+    skor_home INT DEFAULT 0,
+    skor_away INT DEFAULT 0,
+    status VARCHAR(20) DEFAULT 'belum' CHECK (status IN ('belum', 'berlangsung', 'selesai', 'batal')),
+    catatan TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Match Lineup (susunan pemain per match)
+CREATE TABLE match_lineup (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    match_id UUID NOT NULL REFERENCES match(id) ON DELETE CASCADE,
+    siswa_id UUID NOT NULL REFERENCES siswa(id) ON DELETE CASCADE,
+    tim VARCHAR(10) CHECK (tim IN ('home', 'away')),
+    posisi VARCHAR(20),
+    status VARCHAR(20) DEFAULT 'starter' CHECK (status IN ('starter', 'cadangan', 'masuk', 'keluar')),
+    menit_masuk INT,
+    menit_keluar INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (match_id, siswa_id, tim)
+);
+
+-- Match Event (gol, kartu, assist, dll)
+CREATE TABLE match_event (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    match_id UUID NOT NULL REFERENCES match(id) ON DELETE CASCADE,
+    siswa_id UUID REFERENCES siswa(id) ON DELETE SET NULL,
+    tipe VARCHAR(20) NOT NULL CHECK (tipe IN ('gol', 'assist', 'kartu_kuning', 'kartu_merah', 'substitusi', 'own_goal')),
+    menit INT,
+    keterangan TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Klasemen (auto-calculate dari match)
+CREATE VIEW v_klasemen AS
+SELECT
+    m.turnamen_id,
+    COALESCE(ml.tim, ml2.tim) AS tim,
+    COUNT(DISTINCT m.id) AS main,
+    SUM(CASE
+        WHEN (ml.tim = 'home' AND m.skor_home > m.skor_away) OR (ml.tim = 'away' AND m.skor_away > m.skor_home) THEN 1
+        ELSE 0
+    END) AS menang,
+    SUM(CASE
+        WHEN m.skor_home = m.skor_away THEN 1
+        ELSE 0
+    END) AS seri,
+    SUM(CASE
+        WHEN (ml.tim = 'home' AND m.skor_home < m.skor_away) OR (ml.tim = 'away' AND m.skor_away < m.skor_home) THEN 1
+        ELSE 0
+    END) AS kalah,
+    SUM(CASE WHEN ml.tim = 'home' THEN m.skor_home ELSE m.skor_away END) AS gol_memasukkan,
+    SUM(CASE WHEN ml.tim = 'home' THEN m.skor_away ELSE m.skor_home END) AS gol_kebobolan,
+    SUM(CASE
+        WHEN (ml.tim = 'home' AND m.skor_home > m.skor_away) OR (ml.tim = 'away' AND m.skor_away > m.skor_home) THEN 3
+        WHEN m.skor_home = m.skor_away THEN 1
+        ELSE 0
+    END) AS poin
+FROM match m
+LEFT JOIN match_lineup ml ON ml.match_id = m.id AND ml.tim = 'home'
+LEFT JOIN match_lineup ml2 ON ml2.match_id = m.id AND ml2.tim = 'away'
+WHERE m.status = 'selesai'
+GROUP BY m.turnamen_id, COALESCE(ml.tim, ml2.tim);
+
+-- ============================================
 -- INDEXES
 -- ============================================
 
@@ -421,6 +562,28 @@ CREATE INDEX idx_turnamen_peserta_siswa ON turnamen_peserta(siswa_id);
 
 -- Pengumuman
 CREATE INDEX idx_pengumuman_akademi ON pengumuman(akademi_id);
+
+-- Notifikasi
+CREATE INDEX idx_notifikasi_akademi ON notifikasi(akademi_id);
+CREATE INDEX idx_notifikasi_penerima ON notifikasi(penerima_id);
+CREATE INDEX idx_notifikasi_read ON notifikasi(is_read);
+
+-- Materi Latihan
+CREATE INDEX idx_materi_akademi ON materi_latihan(akademi_id);
+CREATE INDEX idx_materi_kategori ON materi_latihan(kategori_id);
+CREATE INDEX idx_materi_ku ON materi_latihan(kelompok_umur_id);
+
+-- Log Pelatih
+CREATE INDEX idx_log_pelatih_pelatih ON log_pelatih(pelatih_id);
+CREATE INDEX idx_log_pelatih_tanggal ON log_pelatih(tanggal);
+
+-- Match
+CREATE INDEX idx_match_turnamen ON match(turnamen_id);
+CREATE INDEX idx_match_tanggal ON match(tanggal);
+CREATE INDEX idx_match_lineup_match ON match_lineup(match_id);
+CREATE INDEX idx_match_lineup_siswa ON match_lineup(siswa_id);
+CREATE INDEX idx_match_event_match ON match_event(match_id);
+CREATE INDEX idx_match_event_siswa ON match_event(siswa_id);
 
 -- ============================================
 -- SEED DATA: Default Posisi
