@@ -1,0 +1,44 @@
+-- ============================================
+-- Manajemen SSB — Seed Data
+-- Default data yang dibutuhkan saat akademi baru dibuat
+-- ============================================
+
+-- ============================================
+-- DEFAULT POSISI (akan di-insert per akademi baru)
+-- ============================================
+-- Contoh seed untuk 1 akademi:
+-- INSERT INTO master_posisi (akademi_id, kode, nama) VALUES
+-- ('<akademi_id>', 'GK', 'Goalkeeper'),
+-- ('<akademi_id>', 'CB', 'Center Back'),
+-- ('<akademi_id>', 'LB', 'Left Back'),
+-- ('<akademi_id>', 'RB', 'Right Back'),
+-- ('<akademi_id>', 'DMF', 'Defensive Midfielder'),
+-- ('<akademi_id>', 'CMF', 'Central Midfielder'),
+-- ('<akademi_id>', 'AMF', 'Attacking Midfielder'),
+-- ('<akademi_id>', 'LW', 'Left Wing'),
+-- ('<akademi_id>', 'RW', 'Right Wing'),
+-- ('<akademi_id>', 'CF', 'Center Forward');
+
+-- ============================================
+-- DEFAULT KELOMPOK UMUR (akan di-insert per akademi baru)
+-- ============================================
+-- INSERT INTO kelompok_umur (akademi_id, nama, usia_min, usia_max) VALUES
+-- ('<akademi_id>', 'U-6', 4, 6),
+-- ('<akademi_id>', 'U-8', 6, 8),
+-- ('<akademi_id>', 'U-10', 8, 10),
+-- ('<akademi_id>', 'U-12', 10, 12),
+-- ('<akademi_id>', 'U-14', 12, 14),
+-- ('<akademi_id>', 'U-16', 14, 16),
+-- ('<akademi_id>', 'U-18', 16, 18);
+
+-- ============================================
+-- DEFAULT MASTER PELANGGARAN (akan di-insert per akademi baru)
+-- ============================================
+-- INSERT INTO master_pelanggaran (akademi_id, nama, poin) VALUES
+-- ('<akademi_id>', 'Terlambat latihan', 1),
+-- ('<akademi_id>', 'Tidak hadir tanpa keterangan', 3),
+-- ('<akademi_id>', 'Tidak membawa perlengkapan', 1),
+-- ('<akademi_id>', 'Berkata kasar', 3),
+-- ('<akademi_id>', 'Berkelahi', 5),
+-- ('<akademi_id>', 'Merusak fasilitas', 5),
+-- ('<akademi_id>', 'Tidak menghormati pelatih', 3);
