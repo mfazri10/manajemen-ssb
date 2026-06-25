@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ERD - Manajemen SSB</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f172a; color: #e2e8f0; padding: 24px; min-height: 100vh; }
+  h1 { text-align: center; font-size: 28px; margin-bottom: 8px; color: #f8fafc; }
+  .subtitle { text-align: center; color: #94a3b8; margin-bottom: 32px; font-size: 14px; }
+  .legend { display: flex; gap: 24px; justify-content: center; margin-bottom: 32px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #94a3b8; }
+  .legend-box { width: 16px; height: 16px; border-radius: 3px; }
+  .core { background: #1e3a5f; border: 2px solid #3b82f6; }
+  .master { background: #1a3a2a; border: 2px solid #22c55e; }
+  .finance { background: #3a2a1a; border: 2px solid #f59e0b; }
+  .eval { background: #2a1a3a; border: 2px solid #a855f7; }
+  .comm { background: #3a1a2a; border: 2px solid #ec4899; }
+  .tenant { background: #1a2a3a; border: 2px solid #06b6d4; }
+
+  .erd-container { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
+  .entity {
+    border-radius: 8px; min-width: 260px; max-width: 300px; overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+  .entity-header { padding: 10px 16px; font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+  .entity-body { padding: 8px 16px 12px; font-size: 12.5px; line-height: 1.8; }
+  .entity-body .pk { color: #fbbf24; font-weight: 600; }
+  .entity-body .fk { color: #60a5fa; font-weight: 600; }
+  .entity-body .field { color: #cbd5e1; }
+  .entity-body .req { color: #f87171; font-size: 10px; }
+  .entity-body .note { color: #64748b; font-size: 11px; font-style: italic; }
+
+  .core .entity-header { background: #1e3a5f; color: #93c5fd; border-bottom: 1px solid #3b82f6; }
+  .master .entity-header { background: #1a3a2a; color: #86efac; border-bottom: 1px solid #22c55e; }
+  .finance .entity-header { background: #3a2a1a; color: #fcd34d; border-bottom: 1px solid #f59e0b; }
+  .eval .entity-header { background: #2a1a3a; color: #c084fc; border-bottom: 1px solid #a855f7; }
+  .comm .entity-header { background: #3a1a2a; color: #f9a8d4; border-bottom: 1px solid #ec4899; }
+  .tenant .entity-header { background: #1a2a3a; color: #67e8f9; border-bottom: 1px solid #06b6d4; }
+
+  .section-title { width: 100%; text-align: center; font-size: 18px; font-weight: 700; margin: 24px 0 8px; padding: 8px; border-radius: 6px; }
+  .section-title.core-s { color: #93c5fd; background: rgba(59,130,246,0.1); }
+  .section-title.master-s { color: #86efac; background: rgba(34,197,94,0.1); }
+  .section-title.finance-s { color: #fcd34d; background: rgba(245,158,11,0.1); }
+  .section-title.eval-s { color: #c084fc; background: rgba(168,85,247,0.1); }
+  .section-title.comm-s { color: #f9a8d4; background: rgba(236,72,153,0.1); }
+
+  .relations { max-width: 900px; margin: 40px auto 0; background: rgba(255,255,255,0.03); border-radius: 8px; padding: 24px; border: 1px solid rgba(255,255,255,0.06); }
+  .relations h2 { font-size: 18px; margin-bottom: 16px; color: #f8fafc; }
+  .rel-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .rel-table th { text-align: left; padding: 8px 12px; background: rgba(255,255,255,0.05); color: #94a3b8; font-weight: 600; }
+  .rel-table td { padding: 8px 12px; border-top: 1px solid rgba(255,255,255,0.04); color: #cbd5e1; }
+  .rel-table .type { color: #60a5fa; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<h1>⚽ ERD — Manajemen Sekolah Sepak Bola</h1>
+<p class="subtitle">Entity Relationship Diagram — 18 Entitas Utama</p>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-box core"></div> Core (Siswa, Pelatih, Jadwal)</div>
+  <div class="legend-item"><div class="legend-box master"></div> Master Data</div>
+  <div class="legend-item"><div class="legend-box finance"></div> Keuangan</div>
+  <div class="legend-item"><div class="legend-box eval"></div> Evaluasi & Penilaian</div>
+  <div class="legend-item"><div class="legend-box comm"></div> Komunikasi & Turnamen</div>
+  <div class="legend-item"><div class="legend-box tenant"></div> Multi-Tenant</div>
+</div>
+
+<!-- ===== CORE ENTITIES ===== -->
+<div class="section-title core-s">🧑‍🎓 Core Entities</div>
+<div class="erd-container">
+
+  <div class="entity core">
+    <div class="entity-header">👤 SISWA</div>
+    <div class="entity-body">
+      <span class="pk">id</span> UUID PK<br>
+      <span class="fk">akademi_id</span> FK → akademi<br>
+      <span class="fk">kelompok_umur_id</span> FK → kelompok_umur<br>
+      <span class="field">nisn</span> VARCHAR(20)<br>
+      <span class="field">nik</span> VARCHAR(20)<br>
+      <span class="field">nama_lengkap</span> VARCHAR(100) <span class="req">*</span><br>
+      <span class="field">nama_panggilan</span> VARCHAR(50)<br>
+      <span class="field">tempat_lahir</span> VARCHAR(50)<br>
+      <span class="field">tanggal_lahir</span> DATE <span class="req">*</span><br>
+      <span class="field">jenis_kelamin</span> ENUM(L,P)<br>
+      <span class="field">agama</span> VARCHAR(20)<br>
+      <span class="field">posisi</span> FK → master_posisi<br>
+      <span class="field">tinggi_badan</span> DECIMAL(5,1)<br>
+      <span class="field">berat_badan</span> DECIMAL(5,1)<br>
+      <span class="field">foto_url</span> TEXT<br>
+      <span class="field">status</span> ENUM(aktif,alumni,nonaktif,pending)<br>
+      <span class="field">klub_sebelumnya</span> VARCHAR(100)<br>
+      <span class="field">provinsi</span> VARCHAR(50)<br>
+      <span class="field">kabupaten</span> VARCHAR(50)<br>
+      <span class="field">kecamatan</span> VARCHAR(50)<br>
+      <span class="field">desa</span> VARCHAR(50)<br>
+      <span class="field">alamat_lengkap</span> TEXT<br>
+      <span class="field">catatan</span> TEXT<br>
+      <span class="field">created_at</span> TIMESTAMP<br>
+      <span class="field">updated_at</span> TIMESTAMP
+    </div>
+  </div>
+
+  <div class="entity core">
+    <div class="entity-header">👨‍👩‍👧 ORANG_TUA</div>
+    <div class="entity-body">
+      <span class="pk">id</span> UUID PK<br>
+      <span class="fk">siswa_id</span> FK → siswa <span class="req">*</span><br>
+      <span class="field">nama_orang_tua</span> VARCHAR(100) <span class="req">*</span><br>
+      <span class="field">hp_orang_tua</span> VARCHAR(20) <span class="req">*</span><br>
+      <span class="field">hp_ayah</span> VARCHAR(20)<br>
+      <span class="field">hp_ibu</span> VARCHAR(20)<br>
+      <span class="field">email</span> VARCHAR(100)<br>
+      <span class="field">hubungan</span> VARCHAR(30)<br>
+      <span class="note">1 siswa → 1 orang_tua (1:1)</span>
+    </div>
+  </div>
+
+  <div class="entity core">
+    <div class="entity-header">📋 DOKUMEN_SISWA</div>
+    <div class="entity-body">
+      <span class="pk">id</span> UUID PK<br>
+      <span class="fk">siswa_id</span> FK → siswa <span class="req">*</span><br>
+      <span class="field">jenis</span> ENUM(akta,kk,nisn,kartu_pelajar,raport)<br>
+      <span class="field">file_url</span> TEXT<br>
+      <span class="field">nama_file</span> VARCHAR(255)<br>
+      <span class="field">uploaded_at</span> TIMESTAMP<br>
+      <span class="note">1 siswa → N dokumen (1:N)</span>
+    </div>
+  </div>
+
+  <div class="entity core">
+    <div class="entity-header">🏋️ PELATIH</div>
+    <div class="entity-body">
+      <span class="pk">id</span> UUID PK<br>
+      <span class="fk">akademi_id</span> FK → akademi<br>
+      <span class="field">nama_lengkap</span> VARCHAR(100) <span class="req">*</span><br>
+      <span class="field">no_hp</span> VARCHAR(20)<br>
+      <span class="field">email</span> VARCHAR(100)<br>
+      <span class="field">tempat_lahir</span> VARCHAR(50)<br>
+      <span class="field">tanggal_lahir</span> DATE<br>
+      <span class="field">foto_url</span> TEXT<br>
+      <span class="field">status</span> ENUM(aktif,nonaktif)<br>
+      <span class="field">provinsi</span> VARCHAR(50)<br>
+      <span class="field">kabupaten</span> VARCHAR(50)<br>
+      <span class="field">kecamatan</span> VARCHAR(50)<br>
+      <span class="field">desa</span> VARCHAR(50)<br>
+      <span class="field">catatan</span> TEXT<br>
+      <span class="field">created_at</span> TIMESTAMP<br>
+      <span class="field">updated_at</span> TIMESTAMP
+    </div>
+  </div>
+
+  <div class="entity core">
+    <div class="entity-header">📜 PELATIH_LISENSI</div>
+    <div class="entity-body">
+      <span class="pk">id</span> UUID PK<br>
+      <span class="fk">pelatih_id</span> FK → pelatih <span class="req">*</span><br>
+      <span class="field">lisensi</span> ENUM(d_nasional,c_afc,b_afc,a_afc,pro_afc,fisik,kiper,futsal,lainnya)<br>
+      <span class="field">lisensi_lainnya</span> VARCHAR(100)<br>
+      <span class="note">1 pelatih → N lisensi (1:N)</span>
+    </div>
+  </div>
+
+  <div class="entity core">
+    <div class="entity-header">🎖️ PELATIH_JABATAN</div>
+    <div class="entity-body">
+      <span class="pk">id</span> UUID PK<br>
+      <span class="fk">pelatih_id</span> FK → pelatih <span class="req">*</span><br>
+      <span class="fk">kelompok_umur_id</span> FK → kelompok_umur<br>
+      <span class="field">jabatan</span> ENUM(pelatih_ku,pelatih_kiper,pelatih_fisik,asisten,kepala_pelatih,koordinator)<br>
+      <span class="note">1 pelatih → N jabatan (1:N)</span>
+    </div>
+  </div>
+
+  <div class="entity core">
+    <div class="entity-header">📅 JADWAL_LATIHAN</div>
+    <div class="entity-body">
+      <span class="pk">id</span> UUID PK<br>
+      <span class="fk">akademi_id</span> FK → akademi<br>
+      <span class="fk">kelompok_umur_id</span> FK → kelompok_umur<br>
+      <span class="field">hari</span> ENUM(senin,selasa,rabu,kamis,jumat,sabtu,minggu)<br>
+      <span class="field">waktu_mulai</span> TIME<br>
+      <span class="field">waktu_selesai</span> TIME<br>
+      <span class="field">lokasi</span> VARCHAR(200)<br>
+      <span class="field">materi</span> TEXT<br>
+      <span class="field">tanggal</span> DATE<br>
+      <span class="field">status</span> ENUM(aktif,batal,selesai)<br>
+      <span class="field">created_at</span> TIMESTAMP
+    </div>
+  </div>
+
+  <div class="entity core">
+    <div class="entity-header">✅ ABSENSI</div>
+    <div class="entity-body">
+      <span class="pk">id</span> UUID PK<br>
+      <span class="fk">jadwal_id</span> FK → jadwal_latihan <span class="req">*</span><br>
+      <span class="fk">siswa_id</span> FK → siswa <span class="req">*</span><br>
+      <span class="field">tanggal</span> DATE <span class="req">*</span><br>
+      <span class="field">status</span> ENUM(hadir,izin,sakit,alpha) <span class="req">*</span><br>
+      <span class="field">keterangan</span> TEXT<br>
+      <span class="field">created_at</span> TIMESTAMP<br>
+      <span class="note">Unique: (jadwal_id, siswa_id, tanggal)</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== MASTER DATA ===== -->
+<div class="section-title master-s">📁 Master Data</div>
+<div class="erd-container">
+
+  <div class="entity master">
+    <div class="entity-header">🏫 AKADEMI</div>
+    <div class="entity-body">
+      <span class="pk">id</span> UUID PK<br>
+      <span class="field">nama_akademi</span> VARCHAR(100) <span class="req">*</span><br>
+      <span class="field">slug</span> VARCHAR(50) UNIQUE<br>
+      <span class="field">logo_url</span> TEXT<br>
+      <span class="field">alamat</span> TEXT<br>
+      <span class="field">no_hp</span> VARCHAR(20)<br>
+      <span class="field">email</span> VARCHAR(100)<br>
+      <span class="field">website</span> VARCHAR(200)<br>
+      <span class="field">paket</span> ENUM(gratis,starter,growth,pro)<br>
+      <span class="field">created_at</span> TIMESTAMP<br>
+      <span class="note">Multi-tenant: semua data terkait akademi_id</span>
+    </div>
+  </div>
+
+  <div class="entity master">
+    <div class="entity-header">👥 KELOMPOK_UMUR</div>
+    <div class="entity-body">
+      <span class="pk">id</span> UUID PK<br>
+      <span class="fk">akademi_id</span> FK → akademi<br>
+      <span class="field">nama</span> VARCHAR(30) <span class="req">*</span><br>
+      <span class="field">usia_min</span> INT<br>
+      <span class="field">usia_max</span> INT<br>
+      <span class="field">created_at</span> TIMESTAMP<br>
+      <span class="note">Contoh: U-8, U-10, U-12, U-14, U-16</span>
+    </div>
+  </div>
+
+  <div class="entity master">
+    <div class="entity-header">⚽ MASTER_POSISI</div>
+    <div class="entity-body">
+      <span class="pk">id</span> UUID PK<br>
+      <span class="fk">akademi_id</span> FK → akademi<br>
+      <span class="field">kode</span> VARCHAR(10) <span class="req">*</span><br>
+      <span class="field">nama</span> VARCHAR(50) <span class="req">*</span><br>
+      <span class="field">created_at</span> TIMESTAMP<br>
+      <span class="note">Default: GK, CB, LB, RB, DMF, CMF, AMF, LW, RW, CF</span>
+    </div>
+  </div>
+
+  <div class="entity master">
+    <div class="entity-header">⚠️ MASTER_PELANGGARAN</div>
+    <div class="entity-body">
+      <span class="pk">id</span> UUID PK<br>
+      <span class="fk">akademi_id</span> FK → akademi<br>
+      <span class="field">nama</span> VARCHAR(100) <span class="req">*</span><br>
+      <span class="field">poin</span> INT DEFAULT 0<br>
+      <span class="field">created_at</span> TIMESTAMP<br>
+      <span class="note">Jenis pelanggaran & bobot poin</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== KEUANGAN ===== -->
+<div class="section-title finance-s">💰 Keuangan</div>
+<div class="erd-container">
+
+  <div class="entity finance">
+    <div class="entity-header">💳 SPP_TAGIHAN</div>
+    <div class="entity-body">
+      <span class="pk">id</span> UUID PK<br>
+      <span class="fk">siswa_id</span> FK → siswa <span class="req">*</span><br>
+      <span class="field">bulan</span> INT(2) <span class="req">*</span><br>
+      <span class="field">tahun</span> INT(4) <span class="req">*</span><br>
+      <span class="field">jumlah</span> DECIMAL(12,2) <span class="req">*</span><br>
+      <span class="field">status</span> ENUM(lunas,belum,dispensasi) DEFAULT 'belum'<br>
+      <span class="field">jatuh_tempo</span> DATE<br>
+      <span class="field">created_at</span> TIMESTAMP<br>
+      <span class="note">Unique: (siswa_id, bulan, tahun)</span>
+    </div>
+  </div>
+
+  <div class="entity finance">
+    <div class="entity-header">🧾 SPP_PEMBAYARAN</div>
+    <div class="entity-body">
+      <span class="pk">id</span> UUID PK<br>
+      <span class="fk">tagihan_id</span> FK → spp_tagihan <span class="req">*</span><br>
+      <span class="field">tanggal_bayar</span> DATE <span class="req">*</span><br>
+      <span class="field">jumlah</span> DECIMAL(12,2) <span class="req">*</span><br>
+      <span class="field">metode</span> ENUM(tunai,transfer,qris,lainnya)<br>
+      <span class="field">bukti_url</span> TEXT<br>
+      <span class="field">keterangan</span> TEXT<br>
+      <span class="field">created_at</span> TIMESTAMP<br>
+      <span class="note">1 tagihan → N pembayaran (cicilan)</span>
+    </div>
+  </div>
+
+  <div class="entity finance">
+    <div class="entity-header">📒 BUKU_KAS</div>
+    <div class="entity-body">
+      <span class="pk">id</span> UUID PK<br>
+      <span class="fk">akademi_id</span> FK → akademi<br>
+      <span class="field">tanggal</span> DATE <span class="req">*</span><br>
+      <span class="field">tipe</span> ENUM(masuk,keluar) <span class="req">*</span><br>
+      <span class="field">kategori</span> VARCHAR(50)<br>
+      <span class="field">jumlah</span> DECIMAL(12,2) <span class="req">*</span><br>
+      <span class="field">keterangan</span> TEXT<br>
+      <span class="field">created_at</span> TIMESTAMP
+    </div>
+  </div>
+
+  <div class="entity finance">
+    <div class="entity-header">🏧 TABUNGAN</div>
+    <div class="entity-body">
+      <span class="pk">id</span> UUID PK<br>
+      <span class="fk">siswa_id</span> FK → siswa <span class="req">*</span><br>
+      <span class="field">tanggal</span> DATE <span class="req">*</span><br>
+      <span class="field">tipe</span> ENUM(simpan,tarik) <span class="req">*</span><br>
+      <span class="field">jumlah</span> DECIMAL(12,2) <span class="req">*</span><br>
+      <span class="field">keterangan</span> TEXT<br>
+      <span class="field">created_at</span> TIMESTAMP
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== EVALUASI ===== -->
+<div class="section-title eval-s">📊 Evaluasi & Penilaian</div>
+<div class="erd-container">
+
+  <div class="entity eval">
+    <div class="entity-header">🏃 TES_FISIK</div>
+    <div class="entity-body">
+      <span class="pk">id</span> UUID PK<br>
+      <span class="fk">siswa_id</span> FK → siswa <span class="req">*</span><br>
+      <span class="fk">kelompok_umur_id</span> FK → kelompok_umur<br>
+      <span class="field">tanggal</span> DATE <span class="req">*</span><br>
+      <span class="field">jenis_tes</span> VARCHAR(50) <span class="req">*</span><br>
+      <span class="field">nilai</span> DECIMAL(8,2) <span class="req">*</span><br>
+      <span class="field">satuan</span> VARCHAR(20)<br>
+      <span class="field">catatan</span> TEXT<br>
+      <span class="field">created_at</span> TIMESTAMP<br>
+      <span class="note">Jenis: sprint, lari, agility, dll</span>
+    </div>
+  </div>
+
+  <div class="entity eval">
+    <div class="entity-header">📊 EVALUASI</div>
+    <div class="entity-body">
+      <span class="pk">id</span> UUID PK<br>
+      <span class="fk">siswa_id</span> FK → siswa <span class="req">*</span><br>
+      <span class="fk">pelatih_id</span> FK → pelatih<br>
+      <span class="field">semester</span> VARCHAR(10) <span class="req">*</span><br>
+      <span class="field">tahun_ajaran</span> VARCHAR(10) <span class="req">*</span><br>
+      <span class="field">teknik</span> INT(1-100)<br>
+      <span class="field">fisik</span> INT(1-100)<br>
+      <span class="field">taktik</span> INT(1-100)<br>
+      <span class="field">mental</span> INT(1-100)<br>
+      <span class="field">catatan_pelatih</span> TEXT<br>
+      <span class="field">created_at</span> TIMESTAMP<br>
+      <span class="note">Unique: (siswa_id, semester, tahun_ajaran)</span>
+    </div>
+  </div>
+
+  <div class="entity eval">
+    <div class="entity-header">🏅 SELEKSI</div>
+    <div class="entity-body">
+      <span class="pk">id</span> UUID PK<br>
+      <span class="fk">akademi_id</span> FK → akademi<br>
+      <span class="field">nama</span> VARCHAR(100) <span class="req">*</span><br>
+      <span class="field">tanggal</span> DATE<br>
+      <span class="field">lokasi</span> VARCHAR(200)<br>
+      <span class="field">keterangan</span> TEXT<br>
+      <span class="field">created_at</span> TIMESTAMP
+    </div>
+  </div>
+
+  <div class="entity eval">
+    <div class="entity-header">🏅 SELEKSI_PESERTA</div>
+    <div class="entity-body">
+      <span class="pk">id</span> UUID PK<br>
+      <span class="fk">seleksi_id</span> FK → seleksi <span class="req">*</span><br>
+      <span class="fk">siswa_id</span> FK → siswa <span class="req">*</span><br>
+      <span class="field">status</span> ENUM(daftar,lulus,tidak_lulus)<br>
+      <span class="field">nilai</span> DECIMAL(5,2)<br>
+      <span class="field">catatan</span> TEXT<br>
+      <span class="note">Unique: (seleksi_id, siswa_id)</span>
+    </div>
+  </div>
+
+  <div class="entity eval">
+    <div class="entity-header">⚠️ PELANGGARAN</div>
+    <div class="entity-body">
+      <span class="pk">id</span> UUID PK<br>
+      <span class="fk">siswa_id</span> FK → siswa <span class="req">*</span><br>
+      <span class="fk">master_pelanggaran_id</span> FK → master_pelanggaran<br>
+      <span class="field">tanggal</span> DATE <span class="req">*</span><br>
+      <span class="field">keterangan</span> TEXT<br>
+      <span class="field">created_at</span> TIMESTAMP
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== KOMUNIKASI & TURNAMEN ===== -->
+<div class="section-title comm-s">📢 Komunikasi & Turnamen</div>
+<div class="erd-container">
+
+  <div class="entity comm">
+    <div class="entity-header">📢 PENGUMUMAN</div>
+    <div class="entity-body">
+      <span class="pk">id</span> UUID PK<br>
+      <span class="fk">akademi_id</span> FK → akademi<br>
+      <span class="field">judul</span> VARCHAR(200) <span class="req">*</span><br>
+      <span class="field">isi</span> TEXT <span class="req">*</span><br>
+      <span class="field">target</span> ENUM(semua,siswa,orang_tua,pelatih) DEFAULT 'semua'<br>
+      <span class="fk">kelompok_umur_id</span> FK (nullable, untuk target per KU)<br>
+      <span class="field">tanggal</span> DATE<br>
+      <span class="field">created_at</span> TIMESTAMP
+    </div>
+  </div>
+
+  <div class="entity comm">
+    <div class="entity-header">🏆 TURNAMEN</div>
+    <div class="entity-body">
+      <span class="pk">id</span> UUID PK<br>
+      <span class="fk">akademi_id</span> FK → akademi<br>
+      <span class="field">nama</span> VARCHAR(200) <span class="req">*</span><br>
+      <span class="field">tanggal_mulai</span> DATE<br>
+      <span class="field">tanggal_selesai</span> DATE<br>
+      <span class="field">lokasi</span> VARCHAR(200)<br>
+      <span class="field">kategori_umur</span> VARCHAR(30)<br>
+      <span class="field">hasil</span> TEXT<br>
+      <span class="field">created_at</span> TIMESTAMP
+    </div>
+  </div>
+
+  <div class="entity comm">
+    <div class="entity-header">👤 TURNAMEN_PESERTA</div>
+    <div class="entity-body">
+      <span class="pk">id</span> UUID PK<br>
+      <span class="fk">turnamen_id</span> FK → turnamen <span class="req">*</span><br>
+      <span class="fk">siswa_id</span> FK → siswa <span class="req">*</span><br>
+      <span class="field">posisi</span> VARCHAR(20)<br>
+      <span class="field">gol</span> INT DEFAULT 0<br>
+      <span class="field">kartu_kuning</span> INT DEFAULT 0<br>
+      <span class="field">kartu_merah</span> INT DEFAULT 0<br>
+      <span class="field">menit_bermain</span> INT<br>
+      <span class="field">catatan</span> TEXT<br>
+      <span class="note">Unique: (turnamen_id, siswa_id)</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== RELATIONSHIPS ===== -->
+<div class="relations">
+  <h2>🔗 Relasi Antar Entitas</h2>
+  <table class="rel-table">
+    <thead>
+      <tr><th>Dari</th><th>Ke</th><th>Tipe</th><th>Keterangan</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>akademi</td><td>siswa</td><td class="type">1:N</td><td>1 akademi punya banyak siswa</td></tr>
+      <tr><td>akademi</td><td>pelatih</td><td class="type">1:N</td><td>1 akademi punya banyak pelatih</td></tr>
+      <tr><td>akademi</td><td>kelompok_umur</td><td class="type">1:N</td><td>1 akademi punya banyak KU</td></tr>
+      <tr><td>akademi</td><td>jadwal_latihan</td><td class="type">1:N</td><td>1 akademi punya banyak jadwal</td></tr>
+      <tr><td>siswa</td><td>orang_tua</td><td class="type">1:1</td><td>1 siswa punya 1 data orang tua</td></tr>
+      <tr><td>siswa</td><td>dokumen_siswa</td><td class="type">1:N</td><td>1 siswa punya banyak dokumen</td></tr>
+      <tr><td>siswa</td><td>absensi</td><td class="type">1:N</td><td>1 siswa punya banyak absensi</td></tr>
+      <tr><td>siswa</td><td>spp_tagihan</td><td class="type">1:N</td><td>1 siswa punya banyak tagihan/bulan</td></tr>
+      <tr><td>siswa</td><td>tes_fisik</td><td class="type">1:N</td><td>1 siswa punya banyak tes fisik</td></tr>
+      <tr><td>siswa</td><td>evaluasi</td><td class="type">1:N</td><td>1 siswa punya banyak evaluasi/semester</td></tr>
+      <tr><td>siswa</td><td>tabungan</td><td class="type">1:N</td><td>1 siswa punya banyak transaksi tabungan</td></tr>
+      <tr><td>siswa</td><td>pelanggaran</td><td class="type">1:N</td><td>1 siswa bisa punya banyak pelanggaran</td></tr>
+      <tr><td>pelatih</td><td>pelatih_lisensi</td><td class="type">1:N</td><td>1 pelatih bisa punya banyak lisensi</td></tr>
+      <tr><td>pelatih</td><td>pelatih_jabatan</td><td class="type">1:N</td><td>1 pelatih bisa punya banyak jabatan</td></tr>
+      <tr><td>kelompok_umur</td><td>siswa</td><td class="type">1:N</td><td>1 KU punya banyak siswa</td></tr>
+      <tr><td>kelompok_umur</td><td>jadwal_latihan</td><td class="type">1:N</td><td>1 KU punya banyak jadwal</td></tr>
+      <tr><td>jadwal_latihan</td><td>absensi</td><td class="type">1:N</td><td>1 jadwal punya banyak absensi (per siswa)</td></tr>
+      <tr><td>spp_tagihan</td><td>spp_pembayaran</td><td class="type">1:N</td><td>1 tagihan bisa dibayar cicil</td></tr>
+      <tr><td>turnamen</td><td>turnamen_peserta</td><td class="type">1:N</td><td>1 turnamen punya banyak peserta</td></tr>
+      <tr><td>seleksi</td><td>seleksi_peserta</td><td class="type">1:N</td><td>1 seleksi punya banyak peserta</td></tr>
+      <tr><td>master_posisi</td><td>siswa</td><td class="type">1:N</td><td>1 posisi dipakai banyak siswa</td></tr>
+      <tr><td>master_pelanggaran</td><td>pelanggaran</td><td class="type">1:N</td><td>1 jenis pelanggaran dipakai banyak kali</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div style="text-align:center; margin-top:40px; color:#475569; font-size:12px;">
+  ERD Manajemen SSB — 18 Entitas | Berdasarkan analisis Kita Juara & kebutuhan domain SSB Indonesia
+</div>
+
+</body>
+</html>
