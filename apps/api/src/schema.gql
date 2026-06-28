@@ -14,6 +14,28 @@ A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date
 """
 scalar DateTime
 
+type KelompokUmur {
+  createdAt: DateTime
+  id: String!
+  nama: String!
+  usiaMax: Int
+  usiaMin: Int
+}
+
+type MasterPelanggaran {
+  createdAt: DateTime
+  id: String!
+  nama: String!
+  poin: Int
+}
+
+type MasterPosisi {
+  createdAt: DateTime
+  id: String!
+  kode: String!
+  nama: String!
+}
+
 type Menu {
   icon: String
   id: Int!
@@ -29,14 +51,23 @@ type Menu {
 
 type Mutation {
   createFeature(fungsi: [String!]!, id: String!, label: String!): Boolean!
+  createKelompokUmur(nama: String!, usiaMax: Float, usiaMin: Float): KelompokUmur!
+  createMasterPelanggaran(nama: String!, poin: Float): MasterPelanggaran!
+  createMasterPosisi(kode: String!, nama: String!): MasterPosisi!
   createMenu(icon: String, isActive: Boolean! = true, name: String!, orderNo: Int! = 0, parentId: Int, route: String, slug: String!): Menu!
   createRole(label: String, name: String!): Role!
   createUser(input: CreateUserInput!): User!
   deleteFeature(id: String!): Boolean!
+  deleteKelompokUmur(id: ID!): Boolean!
+  deleteMasterPelanggaran(id: ID!): Boolean!
+  deleteMasterPosisi(id: ID!): Boolean!
   deleteMenu(id: Int!): Menu!
   deleteRole(id: Int!): Role!
   deleteUser(id: String!): Boolean!
   updateFeature(fungsi: [String!]!, label: String!, newId: String!, oldId: String!): Boolean!
+  updateKelompokUmur(id: ID!, nama: String, usiaMax: Float, usiaMin: Float): KelompokUmur!
+  updateMasterPelanggaran(id: ID!, nama: String, poin: Float): MasterPelanggaran!
+  updateMasterPosisi(id: ID!, kode: String, nama: String): MasterPosisi!
   updateMenu(icon: String, id: Int!, isActive: Boolean, name: String, orderNo: Int, parentId: Int, route: String, slug: String): Menu!
   updateRole(id: Int!, label: String, name: String!): Role!
   updateRolePermissions(input: UpdateRolePermissionsInput!): Role!
@@ -60,6 +91,9 @@ type PermissionRole {
 
 type Query {
   activeMenuTree: [Menu!]!
+  kelompokUmur: [KelompokUmur!]!
+  masterPelanggaran: [MasterPelanggaran!]!
+  masterPosisi: [MasterPosisi!]!
   me: UserProfile!
   menus: [Menu!]!
   permissions: [Permission!]!

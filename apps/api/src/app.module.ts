@@ -10,6 +10,7 @@ import { UserModule } from './modules/user/user.module';
 import { RoleModule } from './modules/role/role.module';
 import { MenuModule } from './modules/menu/menu.module';
 import { TenantModule } from './modules/tenant/tenant.module';
+import { MasterDataModule } from './modules/master-data/master-data.module';
 import { APP_FILTER } from '@nestjs/core';
 import { GraphQLExceptionFilter } from './common/filters/graphql-exception.filter';
 import { AppResolver } from './app.resolver';
@@ -40,6 +41,7 @@ import { AppResolver } from './app.resolver';
     RoleModule,
     MenuModule,
     TenantModule,
+    MasterDataModule,
   ],
   providers: [
     AppResolver,

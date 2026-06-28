@@ -13,3 +13,14 @@ export const CurrentAkademi = createParamDecorator(
     return ctx.getContext().req.akademiId;
   },
 );
+
+export const CurrentTenantSlug = createParamDecorator(
+  (data: unknown, context: ExecutionContext): string => {
+    if (context.getType() === 'http') {
+      const request = context.switchToHttp().getRequest();
+      return request.tenantSlug;
+    }
+    const ctx = GqlExecutionContext.create(context);
+    return ctx.getContext().req.tenantSlug;
+  },
+);

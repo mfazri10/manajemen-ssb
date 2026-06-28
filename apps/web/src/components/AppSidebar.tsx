@@ -223,6 +223,57 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         )}
+
+        {/* Master Data (Collapsible Dropdown) */}
+        {showAdminMenu && (
+          <SidebarGroup className="pt-0">
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <Collapsible
+                  defaultOpen={pathname.startsWith("/admin/kelompok-umur") || pathname.startsWith("/admin/posisi") || pathname.startsWith("/admin/pelanggaran")}
+                  className="group/collapsible"
+                >
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton className="w-full flex items-center justify-between transition-all">
+                        <div className="flex items-center gap-3">
+                          <LucideIcons.Database className="w-4 h-4 text-primary" />
+                          <span className="text-2xs font-bold text-sidebar-foreground">Master Data</span>
+                        </div>
+                        <LucideIcons.ChevronRight className="ml-auto w-3.5 h-3.5 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild isActive={pathname === "/admin/kelompok-umur"}>
+                            <Link href="/admin/kelompok-umur" className="text-2xs">
+                              Kelompok Umur
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild isActive={pathname === "/admin/posisi"}>
+                            <Link href="/admin/posisi" className="text-2xs">
+                              Master Posisi
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild isActive={pathname === "/admin/pelanggaran"}>
+                            <Link href="/admin/pelanggaran" className="text-2xs">
+                              Master Pelanggaran
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </SidebarMenuItem>
+                </Collapsible>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </>
     );
   };

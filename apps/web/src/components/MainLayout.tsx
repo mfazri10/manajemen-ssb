@@ -41,6 +41,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     if (pathname === '/admin/jadwal') return 'Jadwal Latihan';
     if (pathname === '/admin/absensi') return 'Absensi Latihan';
     if (pathname === '/admin/transaksi') return 'Keuangan & SPP';
+    if (pathname === '/admin/kelompok-umur') return 'Kelompok Umur';
+    if (pathname === '/admin/posisi') return 'Master Posisi';
+    if (pathname === '/admin/pelanggaran') return 'Master Pelanggaran';
     return 'Manajemen';
   };
 
