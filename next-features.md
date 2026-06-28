@@ -16,53 +16,15 @@ Data global/master ada di `public`, data operasional per-tenant ada di schema te
 
 ---
 
-## 🔍 Perbandingan 3 Pendekatan Multi-Tenant
+## 🏆 Pendekatan Multi-Tenant yang Dipilih: Schema-per-Tenant (Pendekatan B)
 
-### Pendekatan A: Shared DB, Shared Schema + RLS (ROADMAP saat ini)
-
-```
-PostgreSQL Database
-└── public (satu-satunya schema)
-    ├── akademi
-    ├── users (+ akademi_id)
-    ├── siswa (+ akademi_id)
-    ├── pelatih (+ akademi_id)
-    ├── spp_tagihan (via siswa → akademi_id)
-    ├── absensi (via jadwal → akademi_id)
-    └── ... semua tabel campur jadi satu
-```
-
-**Cara kerja:**
-- Semua tenant berbagi tabel yang sama di `public` schema
-- Setiap tabel punya kolom `akademi_id` sebagai penanda tenant
-- PostgreSQL RLS (Row-Level Security) memfilter baris otomatis per tenant
-- Setiap request harus menyertakan konteks `akademi_id`
-
-**✅ Kelebihan:**
-- Paling sederhana diimplementasi
-- Prisma bekerja normal (satu schema, satu client)
-- Migrasi cukup dijalankan sekali
-- Cross-tenant query mudah (superadmin dashboard)
-- Cocok untuk tahap awal/MVP
-
-**❌ Kekurangan:**
-- **Semua data tercampur dalam 1 tabel** — SSB A punya 500 siswa, SSB B punya 1000 siswa → tabel `siswa` = 1500 baris yang harus difilter setiap query
-- **Risiko kebocoran data** — jika developer lupa `WHERE akademi_id = ?` atau RLS salah konfigurasi, data antar SSB bisa bocor
-- **Noisy neighbor** — query berat dari 1 tenant mempengaruhi semua tenant lain
-- **Tidak bisa backup/restore per-tenant** — harus backup seluruh database
-- **Tidak bisa hapus data 1 tenant** dengan mudah (harus `DELETE FROM ... WHERE akademi_id = ?` di 30+ tabel)
-- **Kolom `akademi_id` di mana-mana** — termasuk di tabel anak yang seharusnya inherit dari parent
-- **Semakin lambat seiring bertambahnya tenant** — index harus mempertimbangkan `akademi_id`
-
----
-
-### Pendekatan B: Schema-per-Tenant (⭐ REKOMENDASI)
+Berdasarkan diskusi dan keputusan teknis, sistem menggunakan **Pendekatan B: Schema-per-Tenant** dengan **Drizzle ORM**.
 
 ```
 PostgreSQL Database (1 database)
 ├── public (schema global/master)
 │   ├── akademi                 ← daftar semua tenant
-│   ├── users                   ← auth, login
+│   ├── users                   ← auth, login (Better Auth)
 │   ├── sessions                ← session management
 │   ├── accounts                ← OAuth provider
 │   ├── verifications           ← email verification
@@ -88,74 +50,15 @@ PostgreSQL Database (1 database)
 │   ├── inventaris, inventaris_distribusi, inventaris_mutasi
 │   └── materi_kategori, materi_latihan, log_pelatih
 │
-├── tenant_ssb_garuda_muda (schema per-tenant — struktur identik)
-│   └── ...
-│
-└── tenant_ssb_persib_junior (schema per-tenant — struktur identik)
+└── tenant_ssb_garuda_muda (schema per-tenant — struktur identik)
     └── ...
 ```
 
-**Cara kerja:**
-- Data global (auth, RBAC, billing, menu) ada di `public` schema
-- Saat tenant baru mendaftar, sistem membuat schema baru: `CREATE SCHEMA tenant_{slug}`
-- Semua tabel operasional di-create di schema tersebut (identik strukturnya)
-- Di backend, setiap request mengatur `search_path`:
-  ```sql
-  SET search_path TO tenant_ssb_bintang_jaya, public;
-  ```
-- Query `SELECT * FROM siswa` → otomatis ke `tenant_ssb_bintang_jaya.siswa`
-- Query `SELECT * FROM users` → tetap ke `public.users`
+**Cara Kerja & Isolasi Data:**
 
-**✅ Kelebihan:**
-- **Isolasi data kuat** — data antar SSB benar-benar terpisah secara fisik
-- **Tidak perlu `akademi_id`** pada tabel operasional — schema ADALAH boundary tenant
-- **Hapus tenant = `DROP SCHEMA tenant_ssb_x CASCADE`** — selesai, bersih
-- **Backup per-tenant** mudah: `pg_dump --schema=tenant_ssb_x`
-- **Performa lebih baik** — setiap tabel hanya berisi data 1 SSB
-- **Lebih aman** — tidak mungkin bocor ke tenant lain (berbeda schema)
-- **PostgreSQL schema itu ringan** — bukan database terpisah, overhead minimal
-- **Cocok untuk konteks SSB** — setiap SSB benar-benar organisasi independen
-
-**❌ Kekurangan:**
-- **Migrasi harus dijalankan ke semua schema** — perlu migration runner yang loop per tenant
-- **Drizzle mendukung dynamic schema** secara native via `pgSchema(name)`
-- **Cross-tenant analytics lebih kompleks** — perlu query lintas schema
-- **Provisioning tenant** — butuh service yang membuat schema + tabel saat onboarding
-
----
-
-### Pendekatan C: Database-per-Tenant (2+ Database)
-
-```
-Master Database
-├── akademi, users, auth tables, subscriptions
-
-Database: db_ssb_bintang_jaya
-├── siswa, pelatih, ... (semua tabel operasional)
-
-Database: db_ssb_garuda_muda
-├── siswa, pelatih, ...
-```
-
-**✅ Kelebihan:** Isolasi paling kuat, scale independent, backup mudah
-
-**❌ Kekurangan:** Paling kompleks, mahal, connection pool nightmare, migrasi susah, Prisma butuh banyak client instance, cross-tenant analytics sangat sulit, overkill untuk skala SSB
-
----
-
-## 🏆 Rekomendasi: Pendekatan B — Schema-per-Tenant
-
-| Faktor | Shared Schema (A) | Schema-per-Tenant (B) | DB-per-Tenant (C) |
-|--------|:--:|:--:|:--:|
-| Isolasi data | ⚠️ Lemah (RLS) | ✅ Kuat | ✅✅ Sangat kuat |
-| Kemudahan implementasi | ✅ Mudah | ⚠️ Sedang | ❌ Sulit |
-| Performa per-tenant | ⚠️ Menurun | ✅ Konsisten | ✅ Konsisten |
-| Hapus data tenant | ⚠️ Ribet | ✅ `DROP SCHEMA` | ✅ `DROP DATABASE` |
-| Backup per-tenant | ❌ Tidak bisa | ✅ Bisa | ✅ Bisa |
-| Drizzle Compatibility | ✅ Native | ⭐ ✅ Sangat Baik (Dynamic pgSchema) | ⚠️ Perlu dynamic client |
-| Biaya operasional | ✅ Rendah | ✅ Rendah | ❌ Tinggi |
-| Cross-tenant analytics | ✅ Mudah | ⚠️ Perlu effort | ❌ Sangat sulit |
-| Cocok untuk SSB SaaS | ⚠️ Cukup | ✅ **Ideal** | ❌ Overkill |
+- **Pemisahan Data:** Data global (autentikasi, RBAC, penagihan, menu) disimpan di skema `public`. Data operasional (siswa, pelatih, keuangan, dll.) dipisahkan ke dalam skema unik per tenant: `tenant_{slug}`.
+- **Type Safety dengan Drizzle:** Menggunakan dynamic `pgSchema` dari Drizzle ORM sehingga query ke tabel tenant terisolasi secara tipe dan namespace tanpa perlu melakukan `SET search_path` di level query manual.
+- **Manajemen Mudah:** Hapus tenant cukup dengan `DROP SCHEMA tenant_{slug} CASCADE`, dan backup per tenant dapat dilakukan secara independen via `pg_dump --schema=tenant_{slug}`.
 
 ---
 
@@ -164,57 +67,59 @@ Database: db_ssb_garuda_muda
 ### 1. Pembagian Tabel: Public vs Tenant
 
 #### `public` schema (shared/global) — 12 tabel:
-| Tabel | Fungsi | Status |
-|-------|--------|--------|
-| `akademi` | Registry semua tenant + profil SSB | BARU |
-| `users` | Auth user (Better Auth) | SUDAH ADA |
-| `sessions` | Session management | SUDAH ADA |
-| `accounts` | OAuth provider accounts | SUDAH ADA |
-| `verifications` | Email verification | SUDAH ADA |
-| `roles` | Definisi role (admin, pelatih, dll) | SUDAH ADA |
-| `permissions` | Definisi permission | SUDAH ADA |
-| `permission_roles` | Mapping role ↔ permission | SUDAH ADA |
-| `role_users` | Mapping user ↔ role | SUDAH ADA |
-| `menus` | Navigasi UI sidebar | SUDAH ADA |
-| `plans` | Paket langganan SaaS | BARU (Fase 5) |
-| `subscriptions` | Riwayat langganan per-akademi | BARU (Fase 5) |
+
+| Tabel              | Fungsi                              | Status        |
+| ------------------ | ----------------------------------- | ------------- |
+| `akademi`          | Registry semua tenant + profil SSB  | BARU          |
+| `users`            | Auth user (Better Auth)             | SUDAH ADA     |
+| `sessions`         | Session management                  | SUDAH ADA     |
+| `accounts`         | OAuth provider accounts             | SUDAH ADA     |
+| `verifications`    | Email verification                  | SUDAH ADA     |
+| `roles`            | Definisi role (admin, pelatih, dll) | SUDAH ADA     |
+| `permissions`      | Definisi permission                 | SUDAH ADA     |
+| `permission_roles` | Mapping role ↔ permission           | SUDAH ADA     |
+| `role_users`       | Mapping user ↔ role                 | SUDAH ADA     |
+| `menus`            | Navigasi UI sidebar                 | SUDAH ADA     |
+| `plans`            | Paket langganan SaaS                | BARU (Fase 5) |
+| `subscriptions`    | Riwayat langganan per-akademi       | BARU (Fase 5) |
 
 #### `tenant_{slug}` schema (per-tenant) — 27 tabel:
-| Grup | Tabel | Fungsi |
-|------|-------|--------|
-| **Master Data** | `kelompok_umur` | U-6 s/d U-18 |
-| | `master_posisi` | GK, DF, MF, FW |
-| | `master_pelanggaran` | Jenis pelanggaran + poin |
-| **Siswa** | `siswa` | Data lengkap siswa |
-| | `orang_tua` | Data ayah/ibu/wali (1:1 ke siswa) |
-| | `dokumen_siswa` | Upload akta, KK, NISN |
-| **Pelatih** | `pelatih` | Data pelatih + foto |
-| | `pelatih_lisensi` | Sertifikat D/C/B/A/Pro AFC |
-| | `pelatih_jabatan` | Penugasan ke kelompok umur |
-| **Operasional** | `jadwal_latihan` | Jadwal per kelompok umur |
-| | `absensi` | Kehadiran per sesi |
-| **Keuangan** | `spp_tagihan` | Tagihan bulanan |
-| | `spp_pembayaran` | Pembayaran + bukti |
-| | `buku_kas` | Pemasukan & pengeluaran |
-| | `tabungan` | Simpan/tarik per siswa |
-| **Evaluasi** | `evaluasi` | Rapor semester |
-| | `tes_fisik` | Hasil tes fisik |
-| | `seleksi` | Event seleksi |
-| | `seleksi_peserta` | Peserta + hasil seleksi |
-| | `pelanggaran` | Catatan pelanggaran |
-| **Komunikasi** | `pengumuman` | Broadcast per kelompok/role |
-| | `notifikasi` | Notifikasi personal |
-| **Turnamen** | `turnamen` | Event turnamen |
-| | `turnamen_peserta` | Peserta + statistik |
-| | `match` | Detail pertandingan |
-| | `match_lineup` | Susunan pemain |
-| | `match_event` | Gol, kartu, assist |
-| **Kurikulum** | `materi_kategori` | Kategori materi latihan |
-| | `materi_latihan` | Konten materi |
-| | `log_pelatih` | Log aktivitas pelatih |
-| **Inventaris** | `inventaris` | Master barang |
-| | `inventaris_distribusi` | Distribusi ke siswa |
-| | `inventaris_mutasi` | Mutasi stok masuk/keluar |
+
+| Grup            | Tabel                   | Fungsi                            |
+| --------------- | ----------------------- | --------------------------------- |
+| **Master Data** | `kelompok_umur`         | U-6 s/d U-18                      |
+|                 | `master_posisi`         | GK, DF, MF, FW                    |
+|                 | `master_pelanggaran`    | Jenis pelanggaran + poin          |
+| **Siswa**       | `siswa`                 | Data lengkap siswa                |
+|                 | `orang_tua`             | Data ayah/ibu/wali (1:1 ke siswa) |
+|                 | `dokumen_siswa`         | Upload akta, KK, NISN             |
+| **Pelatih**     | `pelatih`               | Data pelatih + foto               |
+|                 | `pelatih_lisensi`       | Sertifikat D/C/B/A/Pro AFC        |
+|                 | `pelatih_jabatan`       | Penugasan ke kelompok umur        |
+| **Operasional** | `jadwal_latihan`        | Jadwal per kelompok umur          |
+|                 | `absensi`               | Kehadiran per sesi                |
+| **Keuangan**    | `spp_tagihan`           | Tagihan bulanan                   |
+|                 | `spp_pembayaran`        | Pembayaran + bukti                |
+|                 | `buku_kas`              | Pemasukan & pengeluaran           |
+|                 | `tabungan`              | Simpan/tarik per siswa            |
+| **Evaluasi**    | `evaluasi`              | Rapor semester                    |
+|                 | `tes_fisik`             | Hasil tes fisik                   |
+|                 | `seleksi`               | Event seleksi                     |
+|                 | `seleksi_peserta`       | Peserta + hasil seleksi           |
+|                 | `pelanggaran`           | Catatan pelanggaran               |
+| **Komunikasi**  | `pengumuman`            | Broadcast per kelompok/role       |
+|                 | `notifikasi`            | Notifikasi personal               |
+| **Turnamen**    | `turnamen`              | Event turnamen                    |
+|                 | `turnamen_peserta`      | Peserta + statistik               |
+|                 | `match`                 | Detail pertandingan               |
+|                 | `match_lineup`          | Susunan pemain                    |
+|                 | `match_event`           | Gol, kartu, assist                |
+| **Kurikulum**   | `materi_kategori`       | Kategori materi latihan           |
+|                 | `materi_latihan`        | Konten materi                     |
+|                 | `log_pelatih`           | Log aktivitas pelatih             |
+| **Inventaris**  | `inventaris`            | Master barang                     |
+|                 | `inventaris_distribusi` | Distribusi ke siswa               |
+|                 | `inventaris_mutasi`     | Mutasi stok masuk/keluar          |
 
 > ⚠️ **Penting:** Tabel di tenant schema **TIDAK perlu kolom `akademi_id`**. Schema itu sendiri sudah menjadi boundary.
 
@@ -222,7 +127,7 @@ Database: db_ssb_garuda_muda
 
 ### 2. Perubahan Prisma Schema (`public`)
 
-```prisma
+````prisma
 ### 2. Drizzle Schema (`public` & `tenant` Dynamic)
 
 Definisi skema global (`public`) dan operasional (`tenant`) menggunakan Drizzle ORM.
@@ -345,65 +250,81 @@ export const userAkademis = pgTable('user_akademis', {
 }, (t) => [
   unique().on(t.userId, t.akademiId)
 ]);
-```
+````
 
 #### B. Skema Tenant Dynamic (`packages/db/src/schema/tenant.ts`)
+
 Drizzle mempermudah pendefinisian tabel tenant di dalam fungsi yang menerima nama schema dinamis. Hal ini menjamin type safety penuh tanpa perlu `SET search_path` di level query.
 
 ```typescript
-import { pgSchema, uuid, varchar, date, integer, decimal, timestamp, boolean, time, text } from 'drizzle-orm/pg-core';
-import { users } from './public';
+import {
+  pgSchema,
+  uuid,
+  varchar,
+  date,
+  integer,
+  decimal,
+  timestamp,
+  boolean,
+  time,
+  text,
+} from "drizzle-orm/pg-core";
+import { users } from "./public";
 
 export const getTenantSchema = (slug: string) => {
   const tenant = pgSchema(`tenant_${slug}`);
 
-  const kelompokUmur = tenant.table('kelompok_umur', {
-    id: uuid('id').primaryKey().defaultRandom(),
-    nama: varchar('nama', { length: 30 }).notNull(),
-    usiaMin: integer('usia_min'),
-    usiaMax: integer('usia_max'),
-    createdAt: timestamp('created_at').defaultNow(),
+  const kelompokUmur = tenant.table("kelompok_umur", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    nama: varchar("nama", { length: 30 }).notNull(),
+    usiaMin: integer("usia_min"),
+    usiaMax: integer("usia_max"),
+    createdAt: timestamp("created_at").defaultNow(),
   });
 
-  const masterPosisi = tenant.table('master_posisi', {
-    id: uuid('id').primaryKey().defaultRandom(),
-    kode: varchar('kode', { length: 10 }).notNull(),
-    nama: varchar('nama', { length: 50 }).notNull(),
-    createdAt: timestamp('created_at').defaultNow(),
+  const masterPosisi = tenant.table("master_posisi", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    kode: varchar("kode", { length: 10 }).notNull(),
+    nama: varchar("nama", { length: 50 }).notNull(),
+    createdAt: timestamp("created_at").defaultNow(),
   });
 
-  const masterPelanggaran = tenant.table('master_pelanggaran', {
-    id: uuid('id').primaryKey().defaultRandom(),
-    nama: varchar('nama', { length: 100 }).notNull(),
-    poin: integer('poin').default(0),
-    createdAt: timestamp('created_at').defaultNow(),
+  const masterPelanggaran = tenant.table("master_pelanggaran", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    nama: varchar("nama", { length: 100 }).notNull(),
+    poin: integer("poin").default(0),
+    createdAt: timestamp("created_at").defaultNow(),
   });
 
-  const siswa = tenant.table('siswa', {
-    id: uuid('id').primaryKey().defaultRandom(),
-    kelompokUmurId: uuid('kelompok_umur_id').references(() => kelompokUmur.id, { onDelete: 'set null' }),
-    nisn: varchar('nisn', { length: 20 }),
-    nik: varchar('nik', { length: 20 }),
-    namaLengkap: varchar('nama_lengkap', { length: 100 }).notNull(),
-    namaPanggilan: varchar('nama_panggilan', { length: 50 }),
-    tempatLahir: varchar('tempat_lahir', { length: 50 }),
-    tanggalLahir: date('tanggal_lahir').notNull(),
-    jenisKelamin: varchar('jenis_kelamin', { length: 1 }),
-    agama: varchar('agama', { length: 20 }),
-    posisiId: uuid('posisi_id').references(() => masterPosisi.id, { onDelete: 'set null' }),
-    tinggiBadan: decimal('tinggi_badan', { precision: 5, scale: 1 }),
-    beratBadan: decimal('berat_badan', { precision: 5, scale: 1 }),
-    fotoUrl: text('foto_url'),
-    status: varchar('status', { length: 20 }).default('pending'),
-    klubSebelumnya: varchar('klub_sebelumnya', { length: 100 }),
-    provinsi: varchar('provinsi', { length: 50 }),
-    kabupaten: varchar('kabupaten', { length: 50 }),
-    kecamatan: varchar('kecamatan', { length: 50 }),
-    desa: varchar('desa', { length: 50 }),
-    alamatLengkap: text('alamat_lengkap'),
-    catatan: text('catatan'),
-    createdAt: timestamp('created_at').defaultNow(),
-    updatedAt: timestamp('updated_at').defaultNow(),
+  const siswa = tenant.table("siswa", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    kelompokUmurId: uuid("kelompok_umur_id").references(() => kelompokUmur.id, {
+      onDelete: "set null",
+    }),
+    nisn: varchar("nisn", { length: 20 }),
+    nik: varchar("nik", { length: 20 }),
+    namaLengkap: varchar("nama_lengkap", { length: 100 }).notNull(),
+    namaPanggilan: varchar("nama_panggilan", { length: 50 }),
+    tempatLahir: varchar("tempat_lahir", { length: 50 }),
+    tanggalLahir: date("tanggal_lahir").notNull(),
+    jenisKelamin: varchar("jenis_kelamin", { length: 1 }),
+    agama: varchar("agama", { length: 20 }),
+    posisiId: uuid("posisi_id").references(() => masterPosisi.id, {
+      onDelete: "set null",
+    }),
+    tinggiBadan: decimal("tinggi_badan", { precision: 5, scale: 1 }),
+    beratBadan: decimal("berat_badan", { precision: 5, scale: 1 }),
+    fotoUrl: text("foto_url"),
+    status: varchar("status", { length: 20 }).default("pending"),
+    klubSebelumnya: varchar("klub_sebelumnya", { length: 100 }),
+    provinsi: varchar("provinsi", { length: 50 }),
+    kabupaten: varchar("kabupaten", { length: 50 }),
+    kecamatan: varchar("kecamatan", { length: 50 }),
+    desa: varchar("desa", { length: 50 }),
+    alamatLengkap: text("alamat_lengkap"),
+    catatan: text("catatan"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
   });
 
   // ... (Tabel tenant lainnya didefinisikan dengan pola serupa)
@@ -423,7 +344,7 @@ export const getTenantSchema = (slug: string) => {
 
 File ini akan dijalankan saat provisioning tenant baru. Semua `akademi_id` dihilangkan karena schema = tenant boundary.
 
-```sql
+````sql
 -- template: tenant_schema_template.sql
 -- Dijalankan dengan: SET search_path TO 'tenant_{slug}';
 
@@ -877,7 +798,7 @@ export class TenantMiddleware implements NestMiddleware {
 
   async use(req: Request, res: Response, next: NextFunction) {
     const db = this.dbService.db;
-    
+
     // 1. Ambil user dari session (sudah di-set oleh auth middleware)
     const userId = (req as any).user?.id;
     if (!userId) return next();
@@ -946,7 +867,7 @@ export class TenantProvisioningService {
     // Kita jalankan SET search_path di dalam transaction block untuk keamanan pool
     await db.transaction(async (tx) => {
       await tx.execute(sql`SET search_path TO ${sql.identifier(schemaName)}`);
-      
+
       const statements = rawSql
         .split(';')
         .map(s => s.trim())
@@ -955,7 +876,7 @@ export class TenantProvisioningService {
       for (const stmt of statements) {
         await tx.execute(sql.raw(stmt));
       }
-      
+
       // 3. Seed data default dalam schema baru
       await this.seedDefaultDataInTx(tx);
     });
@@ -1033,21 +954,9 @@ export class TenantProvisioningService {
 
     this.logger.log(`Migration completed for ${activeAkademis.length} tenants`);
   }
-}akademis = await this.prisma.akademi.findMany({ where: { isActive: true } });
-
-    for (const akademi of akademis) {
-      const schemaName = `tenant_${akademi.slug}`;
-      this.logger.log(`Migrating: ${schemaName}`);
-
-      await this.prisma.$executeRawUnsafe(`SET search_path TO "${schemaName}"`);
-      await this.prisma.$executeRawUnsafe(migrationSQL);
-    }
-
-    await this.prisma.$executeRawUnsafe(`SET search_path TO public`);
-    this.logger.log(`Migration completed for ${akademis.length} tenants`);
-  }
 }
-```
+
+````
 
 ---
 
@@ -1055,7 +964,7 @@ export class TenantProvisioningService {
 
 ```typescript
 // apps/web/src/hooks/useTenant.ts
-import { create } from 'zustand';
+import { create } from "zustand";
 
 interface TenantState {
   akademiId: string | null;
@@ -1069,8 +978,10 @@ export const useTenant = create<TenantState>((set) => ({
   akademiId: null,
   akademiSlug: null,
   akademiNama: null,
-  setTenant: (id, slug, nama) => set({ akademiId: id, akademiSlug: slug, akademiNama: nama }),
-  clearTenant: () => set({ akademiId: null, akademiSlug: null, akademiNama: null }),
+  setTenant: (id, slug, nama) =>
+    set({ akademiId: id, akademiSlug: slug, akademiNama: nama }),
+  clearTenant: () =>
+    set({ akademiId: null, akademiSlug: null, akademiNama: null }),
 }));
 ```
 
@@ -1079,7 +990,7 @@ export const useTenant = create<TenantState>((set) => ({
 const httpLink = createHttpLink({
   uri: process.env.NEXT_PUBLIC_API_URL,
   headers: {
-    'x-tenant-slug': useTenant.getState().akademiSlug || '',
+    "x-tenant-slug": useTenant.getState().akademiSlug || "",
   },
 });
 ```
@@ -1122,56 +1033,170 @@ const httpLink = createHttpLink({
 
 ### 8. Keamanan & Best Practices
 
-| Aspek | Implementasi |
-|-------|-------------|
-| **SQL Injection pada schema name** | Validasi slug: hanya `[a-z0-9_-]`, max 50 char |
-| **Schema tidak ditemukan** | Check `information_schema.schemata` sebelum SET |
-| **Cross-tenant access** | Middleware WAJIB set `search_path` sebelum query |
-| **Superadmin bypass** | Superadmin bisa `SET search_path TO tenant_xxx, public` manual |
-| **Audit trail** | Log setiap `SET search_path` ke audit_log |
-| **Connection pooling** | Reset `search_path` setelah request selesai |
-| **Backup** | Cron job: `pg_dump --schema=tenant_{slug}` per-tenant |
+| Aspek                              | Implementasi                                                   |
+| ---------------------------------- | -------------------------------------------------------------- |
+| **SQL Injection pada schema name** | Validasi slug: hanya `[a-z0-9_-]`, max 50 char                 |
+| **Schema tidak ditemukan**         | Check `information_schema.schemata` sebelum SET                |
+| **Cross-tenant access**            | Middleware WAJIB set `search_path` sebelum query               |
+| **Superadmin bypass**              | Superadmin bisa `SET search_path TO tenant_xxx, public` manual |
+| **Audit trail**                    | Log setiap `SET search_path` ke audit_log                      |
+| **Connection pooling**             | Reset `search_path` setelah request selesai                    |
+| **Backup**                         | Cron job: `pg_dump --schema=tenant_{slug}` per-tenant          |
 
 ---
 
 ## 🗺️ Roadmap Implementasi
 
 ### Fase 0.1 — Fondasi Multi-Tenant
-- [ ] Tambah model `Akademi` + `UserAkademi` ke Prisma schema
-- [ ] Buat file `tenant_schema_template.sql`
-- [ ] Buat `TenantProvisioningService`
-- [ ] Buat `TenantMiddleware` (set `search_path`)
-- [ ] Update `User` model — tambah relasi ke `UserAkademi`
-- [ ] Buat halaman "Daftarkan Akademi Baru"
+
+- [x] Migrasi ke Drizzle ORM (Skema global & tenant dinamis)
+- [x] Buat file `tenant_schema_template.sql`
+- [x] Buat `TenantProvisioningService`
+- [x] Buat `TenantMiddleware` (mendeteksi context tenant)
+- [x] Konfigurasi Better Auth Drizzle Adapter
+- [ ] Buat halaman "Daftarkan Akademi Baru" (Frontend)
 - [ ] Testing: buat 2 tenant, pastikan data terisolasi
 
 ### Fase 0.2 — Tenant-Aware API & Frontend
-- [ ] Update GraphQL resolvers — query tenant via `search_path`
-- [ ] Buat `useTenant` hook di frontend
-- [ ] Update Apollo Client — kirim `x-tenant-slug` header
-- [ ] Update sidebar — tampilkan nama akademi
-- [ ] Buat tenant switcher (untuk superadmin)
+
+- [ ] **Update GraphQL Resolvers (Backend)**
+  * **Cara kerja:**
+    1. Buat custom decorator `@TenantSlug()` di NestJS untuk mengekstrak `req.tenantSlug` yang diisi oleh `TenantMiddleware`.
+    2. Pada resolver operasional (seperti `SiswaResolver`, `PelatihResolver`), gunakan decorator tersebut untuk mendapatkan slug tenant aktif.
+    3. Panggil `getTenantSchema(slug)` untuk mendapatkan instansi tabel tenant yang type-safe, lalu jalankan query Drizzle.
+  * **Contoh Implementasi:**
+    ```typescript
+    @Query(() => [SiswaType])
+    async getSiswa(@TenantSlug() slug: string) {
+      const tenantDb = getTenantSchema(slug);
+      return this.dbService.db.select().from(tenantDb.siswa);
+    }
+    ```
+
+- [ ] **Buat `useTenant` Hook & State (Frontend - Next.js & Expo)**
+  * **Cara kerja:** Buat store global (menggunakan Zustand atau React Context) untuk menyimpan data tenant aktif (`id`, `slug`, `nama`).
+  * **Next.js:** Simpan data tenant di local storage setelah user berhasil login dan memilih akademi.
+  * **Expo Mobile:** Simpan menggunakan `AsyncStorage` untuk mendukung offline-first.
+
+- [ ] **Update Apollo Client — Kirim `x-tenant-slug` Header (Frontend)**
+  * **Cara kerja:** Konfigurasikan Apollo Link di Next.js & Mobile agar menyisipkan header `x-tenant-slug` secara otomatis di setiap request GraphQL.
+  * **Contoh Implementasi:**
+    ```typescript
+    const httpLink = createHttpLink({ uri: process.env.NEXT_PUBLIC_API_URL });
+    const tenantLink = setContext((_, { headers }) => {
+      const slug = useTenant.getState().slug;
+      return {
+        headers: {
+          ...headers,
+          'x-tenant-slug': slug || '',
+        }
+      };
+    });
+    const client = new ApolloClient({
+      link: tenantLink.concat(httpLink),
+      cache: new InMemoryCache(),
+    });
+    ```
+
+- [ ] **Update Sidebar & UI Header (Frontend)**
+  * **Cara kerja:** Ambil `nama` akademi dari `useTenant` untuk ditampilkan pada judul sidebar atau header dashboard sebagai penanda tenant yang sedang diakses.
+
+- [ ] **Buat Tenant Switcher untuk Superadmin (Frontend)**
+  * **Cara kerja:** Buat komponen dropdown khusus di dashboard Next.js yang hanya muncul jika role user adalah `SUPER_ADMIN`. Dropdown ini berisi daftar semua akademi aktif. Ketika dipilih, panggil `setTenant(slug)` untuk memperbarui store `useTenant`, sehingga seluruh query berikutnya otomatis mengarah ke tenant tersebut.
 
 ### Fase 0.3 — Migration Runner
-- [ ] Buat script `migrate-all-tenants.ts`
-- [ ] Integrasi ke CI/CD pipeline
-- [ ] Testing: tambah kolom baru ke 1 tabel, pastikan semua tenant ter-update
+
+- [ ] **Buat Service `migrateAllTenants` di Drizzle (Backend)**
+  * **Cara kerja:**
+    1. Buat service `TenantMigrationService` yang mengambil daftar semua akademi aktif dari skema `public`.
+    2. Lakukan iterasi (loop) untuk setiap akademi.
+    3. Di dalam loop, buka Drizzle `db.transaction` dan jalankan statement `SET search_path TO tenant_{slug}` diikuti dengan eksekusi raw DDL sql migrasi.
+  * **Keamanan:** Pastikan SQL migrasi dijalankan dalam blok transaksi terisolasi agar kegagalan migrasi di satu tenant tidak mengganggu tenant lainnya.
+
+- [ ] **Integrasi ke CI/CD Pipeline**
+  * **Cara kerja:** Tambahkan step setelah migrasi skema `public` (via `drizzle-kit migrate`) untuk memicu endpoint/script migrasi seluruh tenant secara otomatis saat deployment.
+
+- [ ] **Testing Migrasi Skema**
+  * **Cara kerja:** Tambahkan kolom baru (misal: `catatan_kesehatan` di tabel `siswa`), jalankan script migrasi, dan verifikasi apakah kolom tersebut sukses terbuat di semua skema `tenant_*`.
 
 ---
 
-## ⚠️ Keputusan yang Perlu Diambil
+## 🏆 Keputusan yang Telah Diambil
 
-1. **User ↔ Akademi**: 1 user = 1 akademi? Atau multi-akademi?
-   - *Rekomendasi:* 1 user = 1 akademi default (tapi model mendukung multi via `UserAkademi`)
+1. **User ↔ Akademi**: 1 user = 1 akademi default (database mendukung multi-akademi via tabel `user_akademis` jika diperlukan di masa depan).
+2. **Superadmin**: Superadmin = platform owner (mengelola semua akademi). Admin = per-akademi (hanya memiliki hak akses pada akademi tempat ia ditugaskan).
+3. **Routing**: Path-based (`/dashboard` dengan context header `x-tenant-slug` untuk API).
+4. **ORM**: **Drizzle ORM** secara penuh karena mendukung dynamic schema (`pgSchema`) secara native untuk tenant, serta menjamin type safety penuh.
+5. **Tenant tables**: Drizzle Schema dinamis untuk query & mutasi data yang type-safe. Raw SQL / Drizzle DDL untuk proses provisioning & schema creation saat akademi baru mendaftar.
 
-2. **Superadmin**: Per-akademi atau platform owner?
-   - *Rekomendasi:* Superadmin = platform owner. Admin = per-akademi.
+## 🚀 Fitur Selanjutnya & Prioritas Pengembangan
 
-3. **Routing**: Subdomain atau path-based?
-   - *Rekomendasi:* Path-based dulu (`/dashboard`), subdomain di Fase 5
+Berdasarkan dokumen panduan di direktori `pattern/`, berikut adalah daftar fitur operasional yang akan diimplementasikan setelah fondasi multi-tenant selesai:
 
-4. **Prisma vs Drizzle**: Tetap Prisma atau migrasi?
-   - *Keputusan:* **Migrasi Penuh ke Drizzle ORM** karena arsitektur Multi-Tenant Schema sangat membutuhkan native dynamic schema (`pgSchema`) dan type safety di tingkat tenant.
+### 1. Fase 0.2 & 0.3 — Integrasi Multi-Tenant & API
+* [ ] **GraphQL Resolver Tenant-Aware:** Menyesuaikan semua resolver di NestJS agar membaca `req.tenantSlug` dan mengarahkan query menggunakan `getTenantSchema(slug)`.
+* [ ] **Frontend Apollo Client Integration:** Mengatur Apollo Client di Next.js & Mobile agar otomatis mengirimkan header `x-tenant-slug`.
+* [ ] **Tenant Switcher:** Halaman khusus bagi Superadmin untuk berpindah konteks antar tenant akademi secara dinamis.
+* [ ] **Migration Runner:** Membuat skrip otomatis untuk menjalankan migrasi DDL Drizzle ke seluruh skema `tenant_*` yang aktif.
 
-5. **Tenant tables via Drizzle atau Raw SQL?**
-   - *Keputusan:* Drizzle Schema dinamis untuk query & mutasi type-safe. Raw SQL / Drizzle DDL untuk provisioning & schema creation.
+---
+
+### 2. Fase 1 — MVP (Minimum Viable Product)
+Fokus pada fitur dasar yang harus ada di web dashboard (Admin) dan mobile app (Pelatih/Siswa):
+
+* **🔐 Autentikasi & Onboarding**
+  * Registrasi akun baru & pembuatan akademi baru (otomatis men-trigger `TenantProvisioningService` untuk membuat skema database).
+  * Login adaptif sesuai role (Admin masuk ke Web, Pelatih/Orang Tua masuk ke Mobile).
+* **📊 Dashboard Adaptif (Beranda)**
+  * Dashboard Admin (Web): Grafik siswa, pelatih, absensi, dan ringkasan keuangan.
+  * Dashboard Pelatih (Mobile): Jadwal hari ini, absensi cepat, dan log aktivitas.
+  * Dashboard Orang Tua (Mobile): Profil anak, kehadiran anak, dan status tagihan SPP.
+* **👥 Manajemen Siswa & Orang Tua**
+  * CRUD data siswa lengkap (27 field termasuk foto, kelompok umur, posisi bermain).
+  * Manajemen data Wali/Orang Tua (relasi 1:1 ke siswa).
+  * Upload dokumen siswa (Akta Lahir, KK, NISN).
+* **📅 Jadwal Latihan**
+  * Kalender latihan per kelompok umur.
+  * Penentuan lokasi, hari, jam, dan materi latihan.
+  * Status jadwal (aktif, batal, selesai).
+* **📝 Absensi Digital**
+  * Input absensi secara kolektif (batch) per sesi latihan oleh pelatih.
+  * 4 status kehadiran: Hadir, Izin, Sakit, Alpha.
+  * Persentase kehadiran otomatis per siswa.
+
+---
+
+### 3. Fase 2 — Keuangan & Evaluasi
+* **💰 Keuangan & SPP**
+  * Pembuatan tagihan SPP otomatis setiap awal bulan per siswa.
+  * Pencatatan cicilan SPP (1 tagihan dapat dicicil beberapa kali).
+  * Buku Kas masuk & keluar untuk keuangan akademi.
+  * Manajemen Tabungan siswa.
+* **📊 Evaluasi & Raport**
+  * Input nilai evaluasi per siswa per semester (Teknik, Fisik, Taktik, Mental).
+  * Visualisasi radar chart (4 dimensi) perkembangan siswa.
+  * Export raport ke format PDF.
+* **🏃 Tes Fisik**
+  * Pencatatan hasil tes fisik berkala (sprint, stamina, kelincahan, dll.).
+  * Fitur perankingan (leaderboard) fisik siswa per kelompok umur.
+
+---
+
+### 4. Fase 3 — Komunikasi & Notifikasi
+* **📢 Pengumuman**
+  * Pembuatan pengumuman dengan target spesifik (semua, per kelompok umur, per role).
+* **🔔 Notifikasi Push & Integrasi**
+  * Notifikasi push otomatis ke HP Orang Tua (contoh: saat anak diabsen hadir, atau tagihan SPP dirilis).
+  * Pengiriman notifikasi via Whatsapp/Email.
+
+---
+
+### 5. Fase 4 — Turnamen & Kurikulum
+* **🏆 Turnamen & Pertandingan (Match)**
+  * Pendaftaran turnamen yang diikuti akademi.
+  * Manajemen susunan pemain (lineup) starter & cadangan per match.
+  * Log match events (gol, assist, kartu kuning/merah, pergantian pemain).
+  * Klasemen turnamen otomatis.
+* **📖 Kurikulum & Materi Latihan**
+  * Manajemen pustaka materi latihan berdasarkan kurikulum Filanesia PSSI.
+  * Pembagian materi berdasarkan tahapan usia (kelompok umur) dan tingkat kesulitan (pemula, menengah, lanjutan).
