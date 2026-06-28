@@ -1,0 +1,106 @@
+'use client';
+
+import React from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useSession, signOut } from '@/lib/auth-client';
+import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { AppSidebar } from '@/components/AppSidebar';
+import { LogOut, Loader2, User } from 'lucide-react';
+import { toast } from 'sonner';
+
+export default function MainLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const { data: session, isPending } = useSession();
+
+  const isAuthPage =
+    pathname?.startsWith('/auth/login') ||
+    pathname?.startsWith('/register') ||
+    pathname?.startsWith('/auth/');
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast.success('Berhasil keluar dari akun.');
+      router.push('/auth/login');
+    } catch (err) {
+      toast.error('Gagal keluar dari sesi.');
+    }
+  };
+
+  if (isAuthPage) {
+    return <>{children}</>;
+  }
+
+  // Menentukan nama halaman berdasarkan path
+  const getPageTitle = () => {
+    if (pathname === '/') return 'Dashboard Hub';
+    if (pathname === '/admin/users') return 'Kelola Anggota';
+    if (pathname === '/admin/roles') return 'Matriks Otorisasi (RBAC)';
+    if (pathname === '/admin/siswa') return 'Kelola Siswa';
+    if (pathname === '/admin/jadwal') return 'Jadwal Latihan';
+    if (pathname === '/admin/absensi') return 'Absensi Latihan';
+    if (pathname === '/admin/transaksi') return 'Keuangan & SPP';
+    return 'Manajemen';
+  };
+
+  return (
+    <SidebarProvider>
+      <div className="flex min-h-screen bg-background w-full text-foreground relative">
+        {/* Sidebar Component */}
+        <AppSidebar />
+        
+        {/* Main Content Pane */}
+        <main className="flex-1 flex flex-col min-h-screen overflow-y-auto">
+          {/* Top Navbar Header */}
+          <div className="p-4 border-b border-border bg-card/85 backdrop-blur-md flex items-center justify-between sticky top-0 z-40">
+            <div className="flex items-center gap-4">
+              <SidebarTrigger className="text-foreground/80 hover:text-foreground border border-border bg-background rounded-xl cursor-pointer transition-all" />
+              <div className="flex flex-col text-left">
+                <span className="text-xs font-black text-foreground tracking-tight">
+                  {getPageTitle()}
+                </span>
+                <span className="text-5xs text-muted-foreground font-extrabold uppercase tracking-widest font-mono">
+                  Sistem Otorisasi Garuda
+                </span>
+              </div>
+            </div>
+
+            {/* Profile & Logout Capsule on Top-bar */}
+            <div className="flex items-center gap-3">
+              {isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+              ) : (
+                session?.user && (
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2.5 px-3 py-1.5 bg-background border border-border rounded-xl">
+                      <div className="w-6 h-6 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-black text-xs">
+                        {session.user.name.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="hidden sm:inline text-2xs font-bold text-foreground max-w-[100px] truncate">
+                        {session.user.name}
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={handleSignOut}
+                      className="p-2 bg-destructive/10 hover:bg-destructive/20 border border-destructive/20 hover:border-destructive/40 text-destructive rounded-xl transition-all"
+                      title="Keluar Akun"
+                    >
+                      <LogOut className="w-4 h-4" />
+                    </button>
+                  </div>
+                )
+              )}
+            </div>
+          </div>
+
+          {/* Child Page Content */}
+          <div className="flex-1 w-full p-6 md:p-8 relative z-10">
+            {children}
+          </div>
+        </main>
+      </div>
+    </SidebarProvider>
+  );
+}

@@ -564,3 +564,16 @@ describe('SiswaService', () => {
 ---
 
 *Pattern ini berlaku untuk semua modul di `apps/api`. Setiap penambahan fitur baru wajib mengikuti struktur Resolver → Service → Repository.*
+
+---
+
+## 12. API Versioning & Route Prefixing
+
+Semua endpoint HTTP REST API wajib menggunakan prefix versi `v1/` pada route path-nya. 
+
+- **Aturan**: Gunakan `@Controller('v1/nama-route')` pada setiap REST controller.
+- **Contoh**:
+  - `v1/auth` untuk endpoint autentikasi: `@Controller('v1/auth')`
+  - `v1/siswa` untuk REST endpoint siswa: `@Controller('v1/siswa')`
+  - `v1/pelatih` untuk REST endpoint pelatih: `@Controller('v1/pelatih')`
+
