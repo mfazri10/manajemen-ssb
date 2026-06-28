@@ -1,0 +1,121 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+input CreateUserInput {
+  email: String!
+  name: String!
+  password: String
+  roleIds: [Int!]
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type Menu {
+  icon: String
+  id: Int!
+  isActive: Boolean!
+  name: String!
+  orderNo: Int!
+  parent: Menu
+  parentId: Int
+  route: String
+  slug: String!
+  subMenus: [Menu!]
+}
+
+type Mutation {
+  createFeature(fungsi: [String!]!, id: String!, label: String!): Boolean!
+  createMenu(icon: String, isActive: Boolean! = true, name: String!, orderNo: Int! = 0, parentId: Int, route: String, slug: String!): Menu!
+  createRole(label: String, name: String!): Role!
+  createUser(input: CreateUserInput!): User!
+  deleteFeature(id: String!): Boolean!
+  deleteMenu(id: Int!): Menu!
+  deleteRole(id: Int!): Role!
+  deleteUser(id: String!): Boolean!
+  updateFeature(fungsi: [String!]!, label: String!, newId: String!, oldId: String!): Boolean!
+  updateMenu(icon: String, id: Int!, isActive: Boolean, name: String, orderNo: Int, parentId: Int, route: String, slug: String): Menu!
+  updateRole(id: Int!, label: String, name: String!): Role!
+  updateRolePermissions(input: UpdateRolePermissionsInput!): Role!
+  updateUserRoles(input: UpdateUserRolesInput!): User!
+}
+
+type Permission {
+  createdAt: DateTime!
+  id: Int!
+  label: String
+  name: String!
+  updatedAt: DateTime!
+}
+
+type PermissionRole {
+  id: Int!
+  permission: Permission!
+  permissionId: Int!
+  roleId: Int!
+}
+
+type Query {
+  activeMenuTree: [Menu!]!
+  me: UserProfile!
+  menus: [Menu!]!
+  permissions: [Permission!]!
+  ping: String!
+  roles: [Role!]!
+  user(id: String!): User!
+  users: [User!]!
+}
+
+type Role {
+  createdAt: DateTime!
+  id: Int!
+  label: String
+  name: String!
+  permissionRoles: [PermissionRole!]!
+  updatedAt: DateTime!
+}
+
+input UpdateRolePermissionsInput {
+  permissionIds: [Int!]!
+  roleId: Int!
+}
+
+input UpdateUserRolesInput {
+  roleIds: [Int!]!
+  userId: String!
+}
+
+type User {
+  createdAt: DateTime!
+  email: String!
+  emailVerified: Boolean!
+  id: String!
+  image: String
+  name: String!
+  roleUsers: [UserRoleUser!]!
+  updatedAt: DateTime!
+}
+
+type UserProfile {
+  email: String!
+  id: String!
+  name: String!
+  permissions: [String!]!
+  roles: [String!]!
+}
+
+type UserRole {
+  id: Int!
+  label: String
+  name: String!
+}
+
+type UserRoleUser {
+  id: Int!
+  role: UserRole!
+  roleId: Int!
+  userId: String!
+}

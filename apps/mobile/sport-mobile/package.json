@@ -1,0 +1,11 @@
+{
+  "name": "sport-mobile",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "echo 'Expo Mobile — belum di-scaffold'",
+    "build": "echo 'Build Mobile'",
+    "lint": "echo 'Lint Mobile'",
+    "typecheck": "echo 'Typecheck Mobile'"
+  }
+}

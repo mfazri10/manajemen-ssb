@@ -1,0 +1,13 @@
+{
+  "name": "@workspace/utils",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "devDependencies": {
+    "@workspace/typescript-config": "*",
+    "typescript": "^5.8.3"
+  }
+}

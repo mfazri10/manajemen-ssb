@@ -36,7 +36,7 @@ graph TD
     subgraph Data_Layer ["Data Layer"]
         DB[(🐘 PostgreSQL <br/> Prisma ORM)]
         VEC[(🧠 pgvector <br/> Vector Search)]
-        S3[🗄️ S3-Compatible Storage <br/> (Misal: MinIO)]
+        S3[🗄️ S3-Compatible Storage <br/> storage.sangtech.biz.id]
     end
 
     %% Relasi
@@ -66,7 +66,7 @@ Pemilihan teknologi difokuskan pada tipe data yang kuat (_type-safe_), performa,
 - **Authentication**: Better Auth (dengan ekstensi Admin Plugin)
 - **ORM**: Prisma v7
 - **Database**: PostgreSQL (Self-Hosted / Private Server)
-- **Storage**: S3-Compatible Storage (Misal: MinIO atau AWS S3)
+- **Storage**: S3-Compatible Storage — Self-Hosted di `https://storage.sangtech.biz.id` (via `@aws-sdk/client-s3`)
 
 ### C. Frontend Web (Admin & Dashboard Manajemen)
 - **Framework**: Next.js (App Router)
@@ -77,9 +77,11 @@ Pemilihan teknologi difokuskan pada tipe data yang kuat (_type-safe_), performa,
 ### D. Mobile App (Atlet & Pelatih)
 - **Framework**: Expo / React Native
 - **Routing**: Expo Router (File-based routing)
-- **UI Styling**: Tailwind CSS (NativeWind) / StyleSheet Konstan
+- **UI Components**: Gluestack UI (headless, accessible, tidak bergantung DOM)
 - **Offline Storage**: `AsyncStorage` (Mekanisme _Offline-First_)
 - **State Management**: React Context / Apollo Client dengan Local Cache
+
+> ⚠️ **Catatan:** Mobile TIDAK menggunakan `@workspace/ui` (shadcn/ui) karena berbasis DOM. Mobile memiliki design system mandiri berbasis Gluestack UI. Package yang tetap dibagikan dari monorepo: `@workspace/types`, `@workspace/utils`, `@workspace/validators`.
 
 ### E. Background Jobs & AI (Asisten Analitik)
 - **Job Orchestration**: **Inngest**. Menggantikan Redis/BullMQ untuk antrean tugas asinkron seperti mengirim _push notification_ pengingat jadwal latihan & pertandingan, tanpa perlu mengelola _worker_ terpisah.
