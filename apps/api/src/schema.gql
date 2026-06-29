@@ -12,6 +12,19 @@ type Absensi {
   tanggal: String!
 }
 
+type AuditLog {
+  akademiId: String!
+  aksi: String!
+  createdAt: DateTime
+  dataBaru: String
+  dataLama: String
+  entitas: String
+  entitasId: String
+  id: ID!
+  ipAddress: String
+  userId: String
+}
+
 type BukuKas {
   createdAt: DateTime
   id: ID!
@@ -103,6 +116,18 @@ type KlasemenEntry {
   selisihGol: Int!
   seri: Int!
   tim: String!
+}
+
+type LanggananAkademi {
+  akademiId: String!
+  autoRenew: Boolean!
+  createdAt: DateTime
+  id: ID!
+  paketId: String!
+  status: String!
+  tanggalBerakhir: String!
+  tanggalMulai: String!
+  updatedAt: DateTime
 }
 
 type LogPelatih {
@@ -204,7 +229,11 @@ type Menu {
 }
 
 type Mutation {
+  broadcastPengumuman(channel: String!, pengumumanId: ID!): Boolean!
+  cancelLangganan(id: ID!): LanggananAkademi!
+  checkPaymentStatus(id: ID!): Payment!
   createAbsensi(jadwalId: ID!, keterangan: String, siswaId: ID!, status: String!, tanggal: String!): Absensi!
+  createAuditLog(akademiId: String!, aksi: String!, dataBaru: String, dataLama: String, entitas: String, entitasId: String, ipAddress: String): AuditLog!
   createBukuKas(jumlah: Float!, kategori: String, keterangan: String, tanggal: String!, tipe: String!): BukuKas!
   createEvaluasi(catatanPelatih: String, fisik: Float, mental: Float, pelatihId: ID, semester: String!, siswaId: ID!, tahunAjaran: String!, taktik: Float, teknik: Float): Evaluasi!
   createFeature(fungsi: [String!]!, id: String!, label: String!): Boolean!
@@ -222,10 +251,13 @@ type Mutation {
   createMenu(icon: String, isActive: Boolean! = true, name: String!, orderNo: Int! = 0, parentId: Int, route: String, slug: String!): Menu!
   createNotifikasi(isi: String!, judul: String!, penerimaUserId: String, sentVia: String, target: String, tipe: String): Notifikasi!
   createOrangTua(email: String, hpAyah: String, hpIbu: String, hpOrangTua: String!, hubungan: String, namaOrangTua: String!, siswaId: ID!): OrangTua!
+  createPaketLangganan(aktif: Boolean, durasiBulan: Float!, fitur: String, harga: Float!, maxPelatih: Float, maxSiswa: Float, nama: String!): PaketLangganan!
+  createPayment(langgananId: ID!, method: String!): Payment!
   createPelanggaranSiswa(keterangan: String, masterPelanggaranId: ID, siswaId: ID!, tanggal: String!): PelanggaranSiswa!
   createPelatih(catatan: String, desa: String, email: String, fotoUrl: String, kabupaten: String, kecamatan: String, namaLengkap: String!, noHp: String, provinsi: String, status: String, tanggalLahir: String, tempatLahir: String): Pelatih!
   createPelatihJabatan(jabatan: String!, kelompokUmurId: ID, pelatihId: ID!): PelatihJabatan!
   createPelatihLisensi(lisensi: String!, lisensiLainnya: String, pelatihId: ID!): PelatihLisensi!
+  createPendaftaran(akademiId: String!, alamat: String, dokumenUrl: String, email: String, fotoUrl: String, jenisKelamin: String, kelompokUmurId: String, namaLengkap: String!, namaOrangTua: String, noHpOrangTua: String, posisiId: String, tempatLahir: String, tglLahir: String): Pendaftaran!
   createPengumuman(isi: String!, judul: String!, kelompokUmurId: ID, tanggal: String, target: String): Pengumuman!
   createRole(label: String, name: String!): Role!
   createSeleksi(keterangan: String, lokasi: String, nama: String!, tanggal: String): Seleksi!
@@ -260,6 +292,7 @@ type Mutation {
   deletePelatih(id: ID!): Boolean!
   deletePelatihJabatan(id: ID!): Boolean!
   deletePelatihLisensi(id: ID!): Boolean!
+  deletePendaftaran(id: ID!): Boolean!
   deletePengumuman(id: ID!): Boolean!
   deleteRole(id: Int!): Role!
   deleteSeleksi(id: ID!): Boolean!
@@ -273,6 +306,9 @@ type Mutation {
   deleteTurnamenPeserta(id: ID!): Boolean!
   deleteUser(id: String!): Boolean!
   markNotifikasiRead(id: ID!): Notifikasi!
+  sendEmail(message: String!, subject: String!, to: String!): Boolean!
+  sendWhatsApp(message: String!, phone: String!): Boolean!
+  subscribePaket(akademiId: String!, paketId: ID!): LanggananAkademi!
   updateAbsensi(id: ID!, keterangan: String, status: String, tanggal: String): Absensi!
   updateBukuKas(id: ID!, jumlah: Float, kategori: String, keterangan: String, tanggal: String, tipe: String): BukuKas!
   updateEvaluasi(catatanPelatih: String, fisik: Float, id: ID!, mental: Float, semester: String, tahunAjaran: String, taktik: Float, teknik: Float): Evaluasi!
@@ -288,7 +324,9 @@ type Mutation {
   updateMateriLatihan(deskripsi: String, durasiMenit: Int, id: ID!, instruksi: String, judul: String, kategoriId: ID, kelompokUmurId: ID, level: String, tipe: String): MateriLatihan!
   updateMenu(icon: String, id: Int!, isActive: Boolean, name: String, orderNo: Int, parentId: Int, route: String, slug: String): Menu!
   updateOrangTua(email: String, hpAyah: String, hpIbu: String, hpOrangTua: String, hubungan: String, id: ID!, namaOrangTua: String): OrangTua!
+  updatePaketLangganan(aktif: Boolean, durasiBulan: Float, fitur: String, harga: Float, id: ID!, maxPelatih: Float, maxSiswa: Float, nama: String): PaketLangganan!
   updatePelatih(catatan: String, desa: String, email: String, fotoUrl: String, id: ID!, kabupaten: String, kecamatan: String, namaLengkap: String, noHp: String, provinsi: String, status: String, tanggalLahir: String, tempatLahir: String): Pelatih!
+  updatePendaftaran(alamat: String, dokumenUrl: String, email: String, fotoUrl: String, id: ID!, jenisKelamin: String, kelompokUmurId: String, namaLengkap: String, namaOrangTua: String, noHpOrangTua: String, posisiId: String, tempatLahir: String, tglLahir: String): Pendaftaran!
   updatePengumuman(id: ID!, isi: String, judul: String, tanggal: String, target: String): Pengumuman!
   updateRole(id: Int!, label: String, name: String!): Role!
   updateRolePermissions(input: UpdateRolePermissionsInput!): Role!
@@ -299,6 +337,7 @@ type Mutation {
   updateTesFisik(catatan: String, id: ID!, jenisTes: String, nilai: Float, satuan: String, tanggal: String): TesFisik!
   updateTurnamen(hasil: String, id: ID!, kategoriUmur: String, lokasi: String, nama: String, tanggalMulai: String, tanggalSelesai: String): Turnamen!
   updateUserRoles(input: UpdateUserRolesInput!): User!
+  verifikasiPendaftaran(catatan: String, id: ID!, status: String!): Pendaftaran!
 }
 
 type Notifikasi {
@@ -324,6 +363,33 @@ type OrangTua {
   id: ID!
   namaOrangTua: String!
   siswaId: String!
+}
+
+type PaketLangganan {
+  aktif: Boolean!
+  createdAt: DateTime
+  durasiBulan: Float!
+  fitur: String
+  harga: Float!
+  id: ID!
+  maxPelatih: Float
+  maxSiswa: Float
+  nama: String!
+  updatedAt: DateTime
+}
+
+type Payment {
+  akademiId: String!
+  amount: Float!
+  createdAt: DateTime
+  externalId: String
+  id: ID!
+  langgananId: String
+  metadata: String
+  method: String!
+  paidAt: DateTime
+  status: String!
+  updatedAt: DateTime
 }
 
 type PelanggaranSiswa {
@@ -370,6 +436,26 @@ type PelatihLisensi {
   pelatihId: String!
 }
 
+type Pendaftaran {
+  akademiId: String!
+  alamat: String
+  createdAt: DateTime
+  dokumenUrl: String
+  email: String
+  fotoUrl: String
+  id: ID!
+  jenisKelamin: String
+  kelompokUmurId: String
+  namaLengkap: String!
+  namaOrangTua: String
+  noHpOrangTua: String
+  posisiId: String
+  status: String!
+  tempatLahir: String
+  tglLahir: String
+  updatedAt: DateTime
+}
+
 type Pengumuman {
   createdAt: DateTime
   id: ID!
@@ -400,6 +486,7 @@ type Query {
   absensiByJadwal(jadwalId: ID!): [Absensi!]!
   absensiBySiswa(siswaId: ID!): [Absensi!]!
   activeMenuTree: [Menu!]!
+  auditLog(akademiId: String!, entitas: String, limit: Int): [AuditLog!]!
   bukuKas: [BukuKas!]!
   dashboardSummary: DashboardSummary!
   evaluasi: [Evaluasi!]!
@@ -408,6 +495,7 @@ type Query {
   jadwalLatihan: [JadwalLatihan!]!
   kelompokUmur: [KelompokUmur!]!
   klasemen(turnamenId: ID!): [KlasemenEntry!]!
+  langgananAkademi(akademiId: String!): [LanggananAkademi!]!
   logPelatih(pelatihId: ID): [LogPelatih!]!
   masterPelanggaran: [MasterPelanggaran!]!
   masterPosisi: [MasterPosisi!]!
@@ -421,14 +509,20 @@ type Query {
   notifikasi: [Notifikasi!]!
   orangTua: [OrangTua!]!
   orangTuaBySiswa(siswaId: ID!): OrangTua
+  paketLangganan: [PaketLangganan!]!
+  paymentById(id: ID!): Payment!
+  payments(akademiId: String!): [Payment!]!
   pelanggaranSiswa: [PelanggaranSiswa!]!
   pelatih: [Pelatih!]!
   pelatihById(id: ID!): Pelatih!
   pelatihJabatan(pelatihId: ID!): [PelatihJabatan!]!
   pelatihLisensi(pelatihId: ID!): [PelatihLisensi!]!
+  pendaftaran(status: String): [Pendaftaran!]!
+  pendaftaranById(id: ID!): Pendaftaran!
   pengumuman: [Pengumuman!]!
   permissions: [Permission!]!
   ping: String!
+  recentActivity(akademiId: String!, limit: Int): [AuditLog!]!
   roles: [Role!]!
   seleksi: [Seleksi!]!
   seleksiPeserta(seleksiId: ID!): [SeleksiPeserta!]!

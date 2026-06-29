@@ -47,4 +47,26 @@ export class NotifikasiService {
     await this.dbService.db.delete(t.notifikasi).where(eq(t.notifikasi.id, id));
     return true;
   }
+
+  async sendWhatsApp(phone: string, message: string): Promise<boolean> {
+    console.log(`[WhatsApp] Sending to ${phone}: ${message}`);
+    // Stub: would integrate with WhatsApp Business API
+    return true;
+  }
+
+  async sendEmail(to: string, subject: string, message: string): Promise<boolean> {
+    console.log(`[Email] Sending to ${to}: subject=${subject}, body=${message}`);
+    // Stub: would integrate with email provider (SendGrid, SES, etc)
+    return true;
+  }
+
+  async broadcastPengumuman(slug: string, pengumumanId: string, channel: string): Promise<boolean> {
+    const t = this.getTenant(slug);
+    const pengumuman = await this.dbService.db.select().from(t.pengumuman).where(eq(t.pengumuman.id, pengumumanId)).limit(1);
+    if (!pengumuman.length) throw new NotFoundException('Pengumuman tidak ditemukan.');
+
+    console.log(`[Broadcast] Pengumuman ${pengumumanId} via ${channel}: ${pengumuman[0]?.judul}`);
+    // Stub: would fetch target audience and send via specified channel (wa/email/push)
+    return true;
+  }
 }

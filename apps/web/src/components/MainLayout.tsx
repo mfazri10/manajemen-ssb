@@ -63,6 +63,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     if (pathname === '/admin/materi') return 'Materi Latihan';
     if (pathname === '/admin/seleksi') return 'Seleksi Pemain';
     if (pathname === '/admin/log-pelatih') return 'Log Pelatih';
+    if (pathname === '/admin/pendaftaran') return 'Pendaftaran Online';
+    if (pathname === '/portal') return 'Portal Orang Tua';
+    if (pathname === '/admin/langganan') return 'Langganan';
+    if (pathname === '/admin/audit-log') return 'Audit Log';
+    if (pathname === '/admin/payment') return 'Payment';
     return 'Manajemen';
   };
 

@@ -25,6 +25,10 @@ import { NotifikasiModule } from './modules/notifikasi/notifikasi.module';
 import { MateriModule } from './modules/materi/materi.module';
 import { SeleksiModule } from './modules/seleksi/seleksi.module';
 import { LogPelatihModule } from './modules/log-pelatih/log-pelatih.module';
+import { PendaftaranModule } from './modules/pendaftaran/pendaftaran.module';
+import { SubscriptionModule } from './modules/subscription/subscription.module';
+import { PaymentModule } from './modules/payment/payment.module';
+import { AuditLogModule } from './modules/audit-log/audit-log.module';
 import { APP_FILTER } from '@nestjs/core';
 import { GraphQLExceptionFilter } from './common/filters/graphql-exception.filter';
 import { AppResolver } from './app.resolver';
@@ -70,6 +74,10 @@ import { AppResolver } from './app.resolver';
     MateriModule,
     SeleksiModule,
     LogPelatihModule,
+    PendaftaranModule,
+    SubscriptionModule,
+    PaymentModule,
+    AuditLogModule,
   ],
   providers: [
     AppResolver,

@@ -40,4 +40,32 @@ export class NotifikasiResolver {
     const slug = await this.service.resolveTenantSlug(userId);
     return this.service.delete(slug, id);
   }
+
+  @Mutation(() => Boolean, { name: 'sendWhatsApp' })
+  async sendWhatsApp(
+    @Args('phone') phone: string,
+    @Args('message') message: string,
+  ) {
+    return this.service.sendWhatsApp(phone, message);
+  }
+
+  @Mutation(() => Boolean, { name: 'sendEmail' })
+  async sendEmail(
+    @Args('to') to: string,
+    @Args('subject') subject: string,
+    @Args('message') message: string,
+  ) {
+    return this.service.sendEmail(to, subject, message);
+  }
+
+  @Mutation(() => Boolean, { name: 'broadcastPengumuman' })
+  @RequirePermissions('pengumuman.create')
+  async broadcastPengumuman(
+    @CurrentUser() userId: string,
+    @Args('pengumumanId', { type: () => ID }) pengumumanId: string,
+    @Args('channel') channel: string,
+  ) {
+    const slug = await this.service.resolveTenantSlug(userId);
+    return this.service.broadcastPengumuman(slug, pengumumanId, channel);
+  }
 }

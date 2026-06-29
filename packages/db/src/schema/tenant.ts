@@ -401,6 +401,82 @@ export const getTenantSchema = (slug: string) => {
     createdAt: timestamp('created_at').defaultNow(),
   });
 
+  // Pendaftaran
+  const pendaftaran = tenant.table('pendaftaran', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    akademiId: text('akademi_id').notNull(),
+    namaLengkap: varchar('nama_lengkap', { length: 100 }).notNull(),
+    tempatLahir: varchar('tempat_lahir', { length: 50 }),
+    tglLahir: date('tgl_lahir'),
+    jenisKelamin: varchar('jenis_kelamin', { length: 1 }),
+    alamat: text('alamat'),
+    namaOrangTua: varchar('nama_orang_tua', { length: 100 }),
+    noHpOrangTua: varchar('no_hp_orang_tua', { length: 20 }),
+    email: varchar('email', { length: 100 }),
+    kelompokUmurId: uuid('kelompok_umur_id').references(() => kelompokUmur.id, { onDelete: 'set null' }),
+    posisiId: uuid('posisi_id').references(() => masterPosisi.id, { onDelete: 'set null' }),
+    status: varchar('status', { length: 20 }).default('pending'),
+    fotoUrl: text('foto_url'),
+    dokumenUrl: text('dokumen_url'),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+  });
+
+  // Subscription
+  const paketLangganan = tenant.table('paket_langganan', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    nama: varchar('nama', { length: 100 }).notNull(),
+    harga: decimal('harga', { precision: 12, scale: 2 }).notNull(),
+    durasiBulan: integer('durasi_bulan').notNull(),
+    maxSiswa: integer('max_siswa'),
+    maxPelatih: integer('max_pelatih'),
+    fitur: text('fitur'),
+    aktif: boolean('aktif').default(true),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+  });
+
+  const langgananAkademi = tenant.table('langganan_akademi', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    akademiId: text('akademi_id').notNull(),
+    paketId: uuid('paket_id').notNull().references(() => paketLangganan.id, { onDelete: 'cascade' }),
+    tanggalMulai: date('tanggal_mulai').notNull(),
+    tanggalBerakhir: date('tanggal_berakhir').notNull(),
+    status: varchar('status', { length: 20 }).default('aktif'),
+    autoRenew: boolean('auto_renew').default(false),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+  });
+
+  // Payment
+  const payment = tenant.table('payment', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    akademiId: text('akademi_id').notNull(),
+    langgananId: uuid('langganan_id').references(() => langgananAkademi.id, { onDelete: 'set null' }),
+    amount: decimal('amount', { precision: 12, scale: 2 }).notNull(),
+    method: varchar('method', { length: 30 }).notNull(),
+    externalId: text('external_id'),
+    status: varchar('status', { length: 20 }).default('pending'),
+    paidAt: timestamp('paid_at'),
+    metadata: text('metadata'),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+  });
+
+  // Audit Log
+  const auditLog = tenant.table('audit_log', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    akademiId: text('akademi_id').notNull(),
+    userId: text('user_id'),
+    aksi: varchar('aksi', { length: 50 }).notNull(),
+    entitas: varchar('entitas', { length: 50 }),
+    entitasId: text('entitas_id'),
+    dataLama: text('data_lama'),
+    dataBaru: text('data_baru'),
+    ipAddress: varchar('ip_address', { length: 50 }),
+    createdAt: timestamp('created_at').defaultNow(),
+  });
+
   return {
     kelompokUmur,
     masterPosisi,
@@ -435,5 +511,10 @@ export const getTenantSchema = (slug: string) => {
     inventaris,
     inventarisDistribusi,
     inventarisMutasi,
+    pendaftaran,
+    paketLangganan,
+    langgananAkademi,
+    payment,
+    auditLog,
   };
 };

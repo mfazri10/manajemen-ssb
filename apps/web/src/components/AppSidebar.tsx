@@ -214,6 +214,20 @@ export function AppSidebar() {
                               </Link>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild isActive={pathname === "/admin/langganan"}>
+                            <Link href="/admin/langganan" className="text-2xs">
+                              Langganan
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild isActive={pathname === "/admin/audit-log"}>
+                            <Link href="/admin/audit-log" className="text-2xs">
+                              Audit Log
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
                         )}
                       </SidebarMenuSub>
                     </CollapsibleContent>
@@ -263,6 +277,13 @@ export function AppSidebar() {
                           <SidebarMenuSubButton asChild isActive={pathname === "/admin/pelanggaran"}>
                             <Link href="/admin/pelanggaran" className="text-2xs">
                               Master Pelanggaran
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild isActive={pathname === "/admin/pendaftaran"}>
+                            <Link href="/admin/pendaftaran" className="text-2xs">
+                              Pendaftaran
                             </Link>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
@@ -324,6 +345,13 @@ export function AppSidebar() {
                             </Link>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild isActive={pathname === "/portal"}>
+                            <Link href="/portal" className="text-2xs">
+                              Portal Orang Tua
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
                       </SidebarMenuSub>
                     </CollapsibleContent>
                   </SidebarMenuItem>
@@ -367,6 +395,11 @@ export function AppSidebar() {
                         <SidebarMenuSubItem>
                           <SidebarMenuSubButton asChild isActive={pathname === "/admin/tabungan"}>
                             <Link href="/admin/tabungan" className="text-2xs">Tabungan Siswa</Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild isActive={pathname === "/admin/payment"}>
+                            <Link href="/admin/payment" className="text-2xs">Payment</Link>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                       </SidebarMenuSub>
