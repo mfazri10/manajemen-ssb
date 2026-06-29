@@ -16,6 +16,8 @@ import { OrangTuaModule } from './modules/orang-tua/orang-tua.module';
 import { PelatihModule } from './modules/pelatih/pelatih.module';
 import { JadwalModule } from './modules/jadwal/jadwal.module';
 import { AbsensiModule } from './modules/absensi/absensi.module';
+import { SppModule } from './modules/spp/spp.module';
+import { KeuanganEvaluasiModule } from './modules/keuangan-evaluasi/keuangan-evaluasi.module';
 import { APP_FILTER } from '@nestjs/core';
 import { GraphQLExceptionFilter } from './common/filters/graphql-exception.filter';
 import { AppResolver } from './app.resolver';
@@ -52,6 +54,8 @@ import { AppResolver } from './app.resolver';
     PelatihModule,
     JadwalModule,
     AbsensiModule,
+    SppModule,
+    KeuanganEvaluasiModule,
   ],
   providers: [
     AppResolver,

@@ -332,6 +332,96 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         )}
+
+        {/* Keuangan (Collapsible Dropdown) */}
+        {showAdminMenu && (
+          <SidebarGroup className="pt-0">
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <Collapsible
+                  defaultOpen={pathname.startsWith("/admin/spp") || pathname.startsWith("/admin/buku-kas") || pathname.startsWith("/admin/tabungan")}
+                  className="group/collapsible"
+                >
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton className="w-full flex items-center justify-between transition-all">
+                        <div className="flex items-center gap-3">
+                          <LucideIcons.Wallet className="w-4 h-4 text-primary" />
+                          <span className="text-2xs font-bold text-sidebar-foreground">Keuangan</span>
+                        </div>
+                        <LucideIcons.ChevronRight className="ml-auto w-3.5 h-3.5 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild isActive={pathname === "/admin/spp"}>
+                            <Link href="/admin/spp" className="text-2xs">SPP & Tagihan</Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild isActive={pathname === "/admin/buku-kas"}>
+                            <Link href="/admin/buku-kas" className="text-2xs">Buku Kas</Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild isActive={pathname === "/admin/tabungan"}>
+                            <Link href="/admin/tabungan" className="text-2xs">Tabungan Siswa</Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </SidebarMenuItem>
+                </Collapsible>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* Evaluasi (Collapsible Dropdown) */}
+        {showAdminMenu && (
+          <SidebarGroup className="pt-0">
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <Collapsible
+                  defaultOpen={pathname.startsWith("/admin/tes-fisik") || pathname.startsWith("/admin/evaluasi") || pathname.startsWith("/admin/pelanggaran")}
+                  className="group/collapsible"
+                >
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton className="w-full flex items-center justify-between transition-all">
+                        <div className="flex items-center gap-3">
+                          <LucideIcons.ClipboardCheck className="w-4 h-4 text-primary" />
+                          <span className="text-2xs font-bold text-sidebar-foreground">Evaluasi & Disiplin</span>
+                        </div>
+                        <LucideIcons.ChevronRight className="ml-auto w-3.5 h-3.5 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild isActive={pathname === "/admin/tes-fisik"}>
+                            <Link href="/admin/tes-fisik" className="text-2xs">Tes Fisik</Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild isActive={pathname === "/admin/evaluasi"}>
+                            <Link href="/admin/evaluasi" className="text-2xs">Evaluasi Siswa</Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild isActive={pathname === "/admin/pelanggaran"}>
+                            <Link href="/admin/pelanggaran" className="text-2xs">Pelanggaran</Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </SidebarMenuItem>
+                </Collapsible>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </>
     );
   };

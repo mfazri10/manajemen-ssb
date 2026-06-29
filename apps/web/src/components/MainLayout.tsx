@@ -48,6 +48,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     if (pathname === '/admin/jadwal') return 'Jadwal Latihan';
     if (pathname === '/admin/absensi') return 'Absensi Latihan';
     if (pathname === '/admin/orang-tua') return 'Data Orang Tua';
+    if (pathname === '/admin/spp') return 'SPP & Tagihan';
+    if (pathname === '/admin/buku-kas') return 'Buku Kas';
+    if (pathname === '/admin/tabungan') return 'Tabungan Siswa';
+    if (pathname === '/admin/tes-fisik') return 'Tes Fisik';
+    if (pathname === '/admin/evaluasi') return 'Evaluasi Siswa';
+    if (pathname === '/admin/pelanggaran') return 'Pelanggaran Siswa';
     return 'Manajemen';
   };
 
