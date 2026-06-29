@@ -18,6 +18,7 @@ import { JadwalModule } from './modules/jadwal/jadwal.module';
 import { AbsensiModule } from './modules/absensi/absensi.module';
 import { SppModule } from './modules/spp/spp.module';
 import { KeuanganEvaluasiModule } from './modules/keuangan-evaluasi/keuangan-evaluasi.module';
+import { Fase34Module } from './modules/fase-3-4/fase-3-4.module';
 import { APP_FILTER } from '@nestjs/core';
 import { GraphQLExceptionFilter } from './common/filters/graphql-exception.filter';
 import { AppResolver } from './app.resolver';
@@ -56,6 +57,7 @@ import { AppResolver } from './app.resolver';
     AbsensiModule,
     SppModule,
     KeuanganEvaluasiModule,
+    Fase34Module,
   ],
   providers: [
     AppResolver,

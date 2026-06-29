@@ -54,6 +54,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     if (pathname === '/admin/tes-fisik') return 'Tes Fisik';
     if (pathname === '/admin/evaluasi') return 'Evaluasi Siswa';
     if (pathname === '/admin/pelanggaran') return 'Pelanggaran Siswa';
+    if (pathname === '/admin/pengumuman') return 'Pengumuman';
+    if (pathname === '/admin/turnamen') return 'Turnamen';
+    if (pathname === '/admin/inventaris') return 'Inventaris';
     return 'Manajemen';
   };
 
