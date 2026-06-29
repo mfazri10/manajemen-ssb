@@ -274,6 +274,64 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         )}
+
+        {/* Operasional (Collapsible Dropdown) */}
+        {showAdminMenu && (
+          <SidebarGroup className="pt-0">
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <Collapsible
+                  defaultOpen={pathname.startsWith("/admin/siswa") || pathname.startsWith("/admin/pelatih") || pathname.startsWith("/admin/jadwal") || pathname.startsWith("/admin/absensi")}
+                  className="group/collapsible"
+                >
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton className="w-full flex items-center justify-between transition-all">
+                        <div className="flex items-center gap-3">
+                          <LucideIcons.Users className="w-4 h-4 text-primary" />
+                          <span className="text-2xs font-bold text-sidebar-foreground">Operasional</span>
+                        </div>
+                        <LucideIcons.ChevronRight className="ml-auto w-3.5 h-3.5 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild isActive={pathname === "/admin/siswa"}>
+                            <Link href="/admin/siswa" className="text-2xs">
+                              Kelola Siswa
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild isActive={pathname === "/admin/pelatih"}>
+                            <Link href="/admin/pelatih" className="text-2xs">
+                              Manajemen Pelatih
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild isActive={pathname === "/admin/jadwal"}>
+                            <Link href="/admin/jadwal" className="text-2xs">
+                              Jadwal Latihan
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild isActive={pathname === "/admin/absensi"}>
+                            <Link href="/admin/absensi" className="text-2xs">
+                              Absensi
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </SidebarMenuItem>
+                </Collapsible>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </>
     );
   };
