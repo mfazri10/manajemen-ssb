@@ -48,14 +48,14 @@ export default function AdminMatchPage() {
           {(turnamenData?.turnamen || []).map(t => <option key={t.id} value={t.id}>{t.nama}</option>)}
         </select>
       </div>
-      {tab === 'match' && <MatchTab turnamenFilter={turnamenFilter} selectedMatch={selectedMatch} setSelectedMatch={setSelectedMatch} subTab={subTab} setSubTab={setSubTab} siswaMap={Object.fromEntries((siswaData?.siswa || []).map(s => [s.id, s.namaLengkap]))} />}
+      {tab === 'match' && <MatchTab turnamenFilter={turnamenFilter} selectedMatch={selectedMatch} setSelectedMatch={setSelectedMatch} subTab={subTab} setSubTab={setSubTab} siswaMap={Object.fromEntries((siswaData?.siswa || []).map(s => [s.id, s.namaLengkap]))} siswaList={siswaData?.siswa || []} />}
       {tab === 'klasemen' && turnamenFilter && <KlasemenTab turnamenId={turnamenFilter} />}
       {tab === 'klasemen' && !turnamenFilter && <div className="text-xs text-muted-foreground p-4 bg-muted/30 rounded-xl">Pilih turnamen untuk melihat klasemen.</div>}
     </div>
   );
 }
 
-function MatchTab({ turnamenFilter, selectedMatch, setSelectedMatch, subTab, setSubTab, siswaMap }: { turnamenFilter: string; selectedMatch: string | null; setSelectedMatch: (id: string | null) => void; subTab: 'lineup' | 'events'; setSubTab: (t: 'lineup' | 'events') => void; siswaMap: Record<string, string> }) {
+function MatchTab({ turnamenFilter, selectedMatch, setSelectedMatch, subTab, setSubTab, siswaMap, siswaList }: { turnamenFilter: string; selectedMatch: string | null; setSelectedMatch: (id: string | null) => void; subTab: 'lineup' | 'events'; setSubTab: (t: 'lineup' | 'events') => void; siswaMap: Record<string, string>; siswaList: { id: string; namaLengkap: string }[] }) {
   const { data, loading, refetch } = useQuery<{ match: any[] }>(GET_MATCH, { variables: turnamenFilter ? { turnamenId: turnamenFilter } : {}, fetchPolicy: 'cache-and-network' });
   const { data: lineupData, refetch: refetchLineup } = useQuery<{ matchLineup: any[] }>(GET_LINEUP, { variables: { matchId: selectedMatch || '' }, skip: !selectedMatch });
   const { data: eventsData, refetch: refetchEvents } = useQuery<{ matchEvent: any[] }>(GET_EVENTS, { variables: { matchId: selectedMatch || '' }, skip: !selectedMatch });
@@ -197,7 +197,7 @@ function MatchTab({ turnamenFilter, selectedMatch, setSelectedMatch, subTab, set
             </div>
             <DialogFooter className="pt-4 border-t border-border"><Button type="button" onClick={() => setSkorDialog(false)} className="px-4 py-2 border border-border bg-background hover:bg-muted text-muted-foreground font-bold text-2xs rounded-xl cursor-pointer mr-2">Batal</Button><Button type="submit" disabled={submitting} className="px-4 py-2 bg-primary hover:bg-primary/95 text-primary-foreground font-bold text-2xs rounded-xl cursor-pointer">Simpan Skor</Button></DialogFooter>
           </form>
-       DialogContent>
+        </DialogContent>
       </Dialog>
 
       {/* Lineup Dialog */}
@@ -205,7 +205,7 @@ function MatchTab({ turnamenFilter, selectedMatch, setSelectedMatch, subTab, set
         <DialogContent className="bg-card border border-border text-foreground max-w-md rounded-2xl p-6 shadow-xl">
           <DialogHeader><DialogTitle className="font-black text-xl">Tambah Lineup</DialogTitle></DialogHeader>
           <form onSubmit={handleLineup} className="space-y-4">
-            <div className="space-y-1"><label className="text-5xs font-bold text-muted-foreground uppercase tracking-widest">Pemain</label><select value={lf.siswaId} onChange={e => setLf(p => ({ ...p, siswaId: e.target.value }))} className="w-full px-3.5 py-2 text-xs bg-background border border-border rounded-xl focus:border-primary text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium" required><option value="">-- Pilih --</option>{(siswaData?.siswa || []).map(s => <option key={s.id} value={s.id}>{s.namaLengkap}</option>)}</select></div>
+            <div className="space-y-1"><label className="text-5xs font-bold text-muted-foreground uppercase tracking-widest">Pemain</label><select value={lf.siswaId} onChange={e => setLf(p => ({ ...p, siswaId: e.target.value }))} className="w-full px-3.5 py-2 text-xs bg-background border border-border rounded-xl focus:border-primary text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium" required><option value="">-- Pilih --</option>{(siswaList || []).map(s => <option key={s.id} value={s.id}>{s.namaLengkap}</option>)}</select></div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1"><label className="text-5xs font-bold text-muted-foreground uppercase tracking-widest">Tim</label><select value={lf.tim} onChange={e => setLf(p => ({ ...p, tim: e.target.value }))} className="w-full px-3.5 py-2 text-xs bg-background border border-border rounded-xl focus:border-primary text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium"><option value="home">Home</option><option value="away">Away</option></select></div>
               <div className="space-y-1"><label className="text-5xs font-bold text-muted-foreground uppercase tracking-widest">Posisi</label><input type="text" value={lf.posisi} onChange={e => setLf(p => ({ ...p, posisi: e.target.value }))} placeholder="GK, DF, MF, FW" className="w-full px-3.5 py-2 text-xs bg-background border border-border rounded-xl focus:border-primary text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium" /></div>
@@ -217,7 +217,6 @@ function MatchTab({ turnamenFilter, selectedMatch, setSelectedMatch, subTab, set
 
       {/* Event Dialog */}
       <Dialog open={eventDialog} onOpenChange={setEventDialog}>
-DialogContent>
         <DialogContent className="bg-card border border-border text-foreground max-w-md rounded-2xl p-6 shadow-xl">
           <DialogHeader><DialogTitle className="font-black text-xl">Tambah Event</DialogTitle></DialogHeader>
           <form onSubmit={handleEvent} className="space-y-4">
@@ -225,7 +224,7 @@ DialogContent>
               <div className="space-y-1"><label className="text-5xs font-bold text-muted-foreground uppercase tracking-widest">Tipe</label><select value={ef.tipe} onChange={e => setEf(p => ({ ...p, tipe: e.target.value }))} className="w-full px-3.5 py-2 text-xs bg-background border border-border rounded-xl focus:border-primary text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium">{['gol', 'assist', 'kartu_kuning', 'kartu_merah', 'substitusi', 'own_goal'].map(t => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}</select></div>
               <div className="space-y-1"><label className="text-5xs font-bold text-muted-foreground uppercase tracking-widest">Menit</label><input type="number" min="0" value={ef.menit} onChange={e => setEf(p => ({ ...p, menit: e.target.value }))} className="w-full px-3.5 py-2 text-xs bg-background border border-border rounded-xl focus:border-primary text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium" /></div>
             </div>
-            <div className="space-y-1"><label className="text-5xs font-bold text-muted-foreground uppercase tracking-widest">Pemain</label><select value={ef.siswaId} onChange={e => setEf(p => ({ ...p, siswaId: e.target.value }))} className="w-full px-3.5 py-2 text-xs bg-background border border-border rounded-xl focus:border-primary text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium"><option value="">-- Pilih --</option>{(siswaData?.siswa || []).map(s => <option key={s.id} value={s.id}>{s.namaLengkap}</option>)}</select></div>
+            <div className="space-y-1"><label className="text-5xs font-bold text-muted-foreground uppercase tracking-widest">Pemain</label><select value={ef.siswaId} onChange={e => setEf(p => ({ ...p, siswaId: e.target.value }))} className="w-full px-3.5 py-2 text-xs bg-background border border-border rounded-xl focus:border-primary text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium"><option value="">-- Pilih --</option>{(siswaList || []).map(s => <option key={s.id} value={s.id}>{s.namaLengkap}</option>)}</select></div>
             <div className="space-y-1"><label className="text-5xs font-bold text-muted-foreground uppercase tracking-widest">Keterangan</label><input type="text" value={ef.keterangan} onChange={e => setEf(p => ({ ...p, keterangan: e.target.value }))} className="w-full px-3.5 py-2 text-xs bg-background border border-border rounded-xl focus:border-primary text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium" /></div>
             <DialogFooter className="pt-4 border-t border-border"><Button type="button" onClick={() => setEventDialog(false)} className="px-4 py-2 border border-border bg-background hover:bg-muted text-muted-foreground font-bold text-2xs rounded-xl cursor-pointer mr-2">Batal</Button><Button type="submit" disabled={submitting} className="px-4 py-2 bg-primary hover:bg-primary/95 text-primary-foreground font-bold text-2xs rounded-xl cursor-pointer">Simpan</Button></DialogFooter>
           </form>
