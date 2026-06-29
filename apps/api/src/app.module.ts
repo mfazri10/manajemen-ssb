@@ -19,6 +19,12 @@ import { AbsensiModule } from './modules/absensi/absensi.module';
 import { SppModule } from './modules/spp/spp.module';
 import { KeuanganEvaluasiModule } from './modules/keuangan-evaluasi/keuangan-evaluasi.module';
 import { Fase34Module } from './modules/fase-3-4/fase-3-4.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { MatchModule } from './modules/match/match.module';
+import { NotifikasiModule } from './modules/notifikasi/notifikasi.module';
+import { MateriModule } from './modules/materi/materi.module';
+import { SeleksiModule } from './modules/seleksi/seleksi.module';
+import { LogPelatihModule } from './modules/log-pelatih/log-pelatih.module';
 import { APP_FILTER } from '@nestjs/core';
 import { GraphQLExceptionFilter } from './common/filters/graphql-exception.filter';
 import { AppResolver } from './app.resolver';
@@ -58,6 +64,12 @@ import { AppResolver } from './app.resolver';
     SppModule,
     KeuanganEvaluasiModule,
     Fase34Module,
+    DashboardModule,
+    MatchModule,
+    NotifikasiModule,
+    MateriModule,
+    SeleksiModule,
+    LogPelatihModule,
   ],
   providers: [
     AppResolver,

@@ -141,7 +141,7 @@ export function AppSidebar() {
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={pathname === "/"}>
                   <Link
-                    href="/"
+                    href="/admin/dashboard"
                     className="flex items-center gap-3 px-2 py-1.5 rounded-lg transition-all"
                   >
                     <LucideIcons.LayoutDashboard className="w-4 h-4" />
@@ -457,6 +457,66 @@ export function AppSidebar() {
                         <SidebarMenuSubItem>
                           <SidebarMenuSubButton asChild isActive={pathname === "/admin/inventaris"}>
                             <Link href="/admin/inventaris" className="text-2xs">Inventaris</Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild isActive={pathname === "/admin/inventaris"}>
+                            <Link href="/admin/inventaris" className="text-2xs">Inventaris</Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild isActive={pathname === "/admin/match"}>
+                            <Link href="/admin/match" className="text-2xs">Match & Klasemen</Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </SidebarMenuItem>
+                </Collapsible>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* Pengembangan & Komunikasi */}
+        {showAdminMenu && (
+          <SidebarGroup className="pt-0">
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <Collapsible
+                  defaultOpen={pathname.startsWith("/admin/materi") || pathname.startsWith("/admin/seleksi") || pathname.startsWith("/admin/log-pelatih") || pathname.startsWith("/admin/notifikasi")}
+                  className="group/collapsible"
+                >
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton className="w-full flex items-center justify-between transition-all">
+                        <div className="flex items-center gap-3">
+                          <LucideIcons.BookOpen className="w-4 h-4 text-primary" />
+                          <span className="text-2xs font-bold text-sidebar-foreground">Pengembangan</span>
+                        </div>
+                        <LucideIcons.ChevronRight className="ml-auto w-3.5 h-3.5 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild isActive={pathname === "/admin/materi"}>
+                            <Link href="/admin/materi" className="text-2xs">Materi Latihan</Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild isActive={pathname === "/admin/seleksi"}>
+                            <Link href="/admin/seleksi" className="text-2xs">Seleksi Pemain</Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild isActive={pathname === "/admin/log-pelatih"}>
+                            <Link href="/admin/log-pelatih" className="text-2xs">Log Pelatih</Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild isActive={pathname === "/admin/notifikasi"}>
+                            <Link href="/admin/notifikasi" className="text-2xs">Notifikasi</Link>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                       </SidebarMenuSub>

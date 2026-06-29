@@ -57,6 +57,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     if (pathname === '/admin/pengumuman') return 'Pengumuman';
     if (pathname === '/admin/turnamen') return 'Turnamen';
     if (pathname === '/admin/inventaris') return 'Inventaris';
+    if (pathname === '/admin/dashboard') return 'Dashboard';
+    if (pathname === '/admin/match') return 'Match & Klasemen';
+    if (pathname === '/admin/notifikasi') return 'Notifikasi';
+    if (pathname === '/admin/materi') return 'Materi Latihan';
+    if (pathname === '/admin/seleksi') return 'Seleksi Pemain';
+    if (pathname === '/admin/log-pelatih') return 'Log Pelatih';
     return 'Manajemen';
   };
 

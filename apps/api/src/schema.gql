@@ -12,6 +12,16 @@ type Absensi {
   tanggal: String!
 }
 
+type BukuKas {
+  createdAt: DateTime
+  id: ID!
+  jumlah: Float!
+  kategori: String
+  keterangan: String
+  tanggal: String!
+  tipe: String!
+}
+
 input CreateUserInput {
   email: String!
   name: String!
@@ -19,10 +29,48 @@ input CreateUserInput {
   roleIds: [Int!]
 }
 
+type DashboardSummary {
+  saldoKas: Float!
+  siswaAktif: Int!
+  siswaAlumni: Int!
+  totalJadwal: Int!
+  totalPelatih: Int!
+  totalPemasukan: Float!
+  totalPengeluaran: Float!
+  totalSiswa: Int!
+  totalTabungan: Float!
+  totalTagihanBelum: Int!
+}
+
 """
 A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
 """
 scalar DateTime
+
+type Evaluasi {
+  catatanPelatih: String
+  createdAt: DateTime
+  fisik: Float
+  id: ID!
+  mental: Float
+  pelatihId: String
+  semester: String!
+  siswaId: String!
+  tahunAjaran: String!
+  taktik: Float
+  teknik: Float
+}
+
+type Inventaris {
+  createdAt: DateTime
+  id: ID!
+  jumlah: Int!
+  kategori: String
+  keterangan: String
+  kondisi: String!
+  nama: String!
+  satuan: String!
+}
 
 type JadwalLatihan {
   createdAt: DateTime
@@ -45,6 +93,30 @@ type KelompokUmur {
   usiaMin: Int
 }
 
+type KlasemenEntry {
+  golKemasukan: Int!
+  golMasuk: Int!
+  kalah: Int!
+  main: Int!
+  menang: Int!
+  poin: Int!
+  selisihGol: Int!
+  seri: Int!
+  tim: String!
+}
+
+type LogPelatih {
+  catatan: String
+  createdAt: DateTime
+  durasiMenit: Int
+  id: ID!
+  jadwalId: String
+  kegiatan: String!
+  materiId: String
+  pelatihId: String!
+  tanggal: String!
+}
+
 type MasterPelanggaran {
   createdAt: DateTime
   id: String!
@@ -57,6 +129,65 @@ type MasterPosisi {
   id: String!
   kode: String!
   nama: String!
+}
+
+type Match {
+  babak: String
+  catatan: String
+  createdAt: DateTime
+  id: ID!
+  lokasi: String
+  matchNo: Int
+  skorAway: Int!
+  skorHome: Int!
+  status: String!
+  tanggal: String
+  timAway: String
+  timHome: String
+  turnamenId: String!
+  waktu: String
+}
+
+type MatchEvent {
+  createdAt: DateTime
+  id: ID!
+  keterangan: String
+  matchId: String!
+  menit: Int
+  siswaId: String
+  tipe: String!
+}
+
+type MatchLineup {
+  createdAt: DateTime
+  id: ID!
+  matchId: String!
+  menitKeluar: Int
+  menitMasuk: Int
+  posisi: String
+  siswaId: String!
+  status: String!
+  tim: String
+}
+
+type MateriKategori {
+  createdAt: DateTime
+  id: ID!
+  nama: String!
+  urutan: Int!
+}
+
+type MateriLatihan {
+  createdAt: DateTime
+  deskripsi: String
+  durasiMenit: Int
+  id: ID!
+  instruksi: String
+  judul: String!
+  kategoriId: String
+  kelompokUmurId: String
+  level: String!
+  tipe: String!
 }
 
 type Menu {
@@ -74,46 +205,113 @@ type Menu {
 
 type Mutation {
   createAbsensi(jadwalId: ID!, keterangan: String, siswaId: ID!, status: String!, tanggal: String!): Absensi!
+  createBukuKas(jumlah: Float!, kategori: String, keterangan: String, tanggal: String!, tipe: String!): BukuKas!
+  createEvaluasi(catatanPelatih: String, fisik: Float, mental: Float, pelatihId: ID, semester: String!, siswaId: ID!, tahunAjaran: String!, taktik: Float, teknik: Float): Evaluasi!
   createFeature(fungsi: [String!]!, id: String!, label: String!): Boolean!
+  createInventaris(jumlah: Int, kategori: String, keterangan: String, kondisi: String, nama: String!, satuan: String): Inventaris!
   createJadwal(hari: String, kelompokUmurId: ID, lokasi: String, materi: String, status: String, tanggal: String, waktuMulai: String, waktuSelesai: String): JadwalLatihan!
   createKelompokUmur(nama: String!, usiaMax: Float, usiaMin: Float): KelompokUmur!
+  createLogPelatih(catatan: String, durasiMenit: Int, jadwalId: ID, kegiatan: String!, materiId: ID, pelatihId: ID!, tanggal: String!): LogPelatih!
   createMasterPelanggaran(nama: String!, poin: Float): MasterPelanggaran!
   createMasterPosisi(kode: String!, nama: String!): MasterPosisi!
+  createMatch(babak: String, lokasi: String, tanggal: String, timAway: String, timHome: String, turnamenId: ID!, waktu: String): Match!
+  createMatchEvent(keterangan: String, matchId: ID!, menit: Int, siswaId: ID, tipe: String!): MatchEvent!
+  createMatchLineup(matchId: ID!, posisi: String, siswaId: ID!, tim: String): MatchLineup!
+  createMateriKategori(nama: String!, urutan: Int): MateriKategori!
+  createMateriLatihan(deskripsi: String, durasiMenit: Int, instruksi: String, judul: String!, kategoriId: ID, kelompokUmurId: ID, level: String, tipe: String): MateriLatihan!
   createMenu(icon: String, isActive: Boolean! = true, name: String!, orderNo: Int! = 0, parentId: Int, route: String, slug: String!): Menu!
+  createNotifikasi(isi: String!, judul: String!, penerimaUserId: String, sentVia: String, target: String, tipe: String): Notifikasi!
   createOrangTua(email: String, hpAyah: String, hpIbu: String, hpOrangTua: String!, hubungan: String, namaOrangTua: String!, siswaId: ID!): OrangTua!
+  createPelanggaranSiswa(keterangan: String, masterPelanggaranId: ID, siswaId: ID!, tanggal: String!): PelanggaranSiswa!
   createPelatih(catatan: String, desa: String, email: String, fotoUrl: String, kabupaten: String, kecamatan: String, namaLengkap: String!, noHp: String, provinsi: String, status: String, tanggalLahir: String, tempatLahir: String): Pelatih!
   createPelatihJabatan(jabatan: String!, kelompokUmurId: ID, pelatihId: ID!): PelatihJabatan!
   createPelatihLisensi(lisensi: String!, lisensiLainnya: String, pelatihId: ID!): PelatihLisensi!
+  createPengumuman(isi: String!, judul: String!, kelompokUmurId: ID, tanggal: String, target: String): Pengumuman!
   createRole(label: String, name: String!): Role!
+  createSeleksi(keterangan: String, lokasi: String, nama: String!, tanggal: String): Seleksi!
+  createSeleksiPeserta(seleksiId: ID!, siswaId: ID!): SeleksiPeserta!
   createSiswa(agama: String, alamatLengkap: String, beratBadan: Float, catatan: String, desa: String, fotoUrl: String, jenisKelamin: String, kabupaten: String, kecamatan: String, kelompokUmurId: ID, klubSebelumnya: String, namaLengkap: String!, namaPanggilan: String, nik: String, nisn: String, posisiId: ID, provinsi: String, status: String, tanggalLahir: String!, tempatLahir: String, tinggiBadan: Float): Siswa!
+  createSppPembayaran(buktiUrl: String, jumlah: Float!, keterangan: String, metode: String, tagihanId: ID!, tanggalBayar: String!): SppPembayaran!
+  createSppTagihan(bulan: Float!, jatuhTempo: String, jumlah: Float!, siswaId: ID!, status: String, tahun: Float!): SppTagihan!
+  createTabungan(jumlah: Float!, keterangan: String, siswaId: ID!, tanggal: String!, tipe: String!): Tabungan!
+  createTesFisik(catatan: String, jenisTes: String!, kelompokUmurId: ID, nilai: Float!, satuan: String, siswaId: ID!, tanggal: String!): TesFisik!
+  createTurnamen(kategoriUmur: String, lokasi: String, nama: String!, tanggalMulai: String, tanggalSelesai: String): Turnamen!
+  createTurnamenPeserta(posisi: String, siswaId: ID!, turnamenId: ID!): TurnamenPeserta!
   createUser(input: CreateUserInput!): User!
   deleteAbsensi(id: ID!): Boolean!
+  deleteBukuKas(id: ID!): Boolean!
+  deleteEvaluasi(id: ID!): Boolean!
   deleteFeature(id: String!): Boolean!
+  deleteInventaris(id: ID!): Boolean!
   deleteJadwal(id: ID!): Boolean!
   deleteKelompokUmur(id: ID!): Boolean!
+  deleteLogPelatih(id: ID!): Boolean!
   deleteMasterPelanggaran(id: ID!): Boolean!
   deleteMasterPosisi(id: ID!): Boolean!
+  deleteMatch(id: ID!): Boolean!
+  deleteMatchEvent(id: ID!): Boolean!
+  deleteMatchLineup(id: ID!): Boolean!
+  deleteMateriKategori(id: ID!): Boolean!
+  deleteMateriLatihan(id: ID!): Boolean!
   deleteMenu(id: Int!): Menu!
+  deleteNotifikasi(id: ID!): Boolean!
   deleteOrangTua(id: ID!): Boolean!
+  deletePelanggaranSiswa(id: ID!): Boolean!
   deletePelatih(id: ID!): Boolean!
   deletePelatihJabatan(id: ID!): Boolean!
   deletePelatihLisensi(id: ID!): Boolean!
+  deletePengumuman(id: ID!): Boolean!
   deleteRole(id: Int!): Role!
+  deleteSeleksi(id: ID!): Boolean!
+  deleteSeleksiPeserta(id: ID!): Boolean!
   deleteSiswa(id: ID!): Boolean!
+  deleteSppPembayaran(id: ID!): Boolean!
+  deleteSppTagihan(id: ID!): Boolean!
+  deleteTabungan(id: ID!): Boolean!
+  deleteTesFisik(id: ID!): Boolean!
+  deleteTurnamen(id: ID!): Boolean!
+  deleteTurnamenPeserta(id: ID!): Boolean!
   deleteUser(id: String!): Boolean!
+  markNotifikasiRead(id: ID!): Notifikasi!
   updateAbsensi(id: ID!, keterangan: String, status: String, tanggal: String): Absensi!
+  updateBukuKas(id: ID!, jumlah: Float, kategori: String, keterangan: String, tanggal: String, tipe: String): BukuKas!
+  updateEvaluasi(catatanPelatih: String, fisik: Float, id: ID!, mental: Float, semester: String, tahunAjaran: String, taktik: Float, teknik: Float): Evaluasi!
   updateFeature(fungsi: [String!]!, label: String!, newId: String!, oldId: String!): Boolean!
+  updateInventaris(id: ID!, jumlah: Int, kategori: String, keterangan: String, kondisi: String, nama: String, satuan: String): Inventaris!
   updateJadwal(hari: String, id: ID!, kelompokUmurId: ID, lokasi: String, materi: String, status: String, tanggal: String, waktuMulai: String, waktuSelesai: String): JadwalLatihan!
   updateKelompokUmur(id: ID!, nama: String, usiaMax: Float, usiaMin: Float): KelompokUmur!
+  updateLogPelatih(catatan: String, durasiMenit: Int, id: ID!, kegiatan: String): LogPelatih!
   updateMasterPelanggaran(id: ID!, nama: String, poin: Float): MasterPelanggaran!
   updateMasterPosisi(id: ID!, kode: String, nama: String): MasterPosisi!
+  updateMatch(catatan: String, id: ID!, skorAway: Int, skorHome: Int, status: String): Match!
+  updateMateriKategori(id: ID!, nama: String, urutan: Int): MateriKategori!
+  updateMateriLatihan(deskripsi: String, durasiMenit: Int, id: ID!, instruksi: String, judul: String, kategoriId: ID, kelompokUmurId: ID, level: String, tipe: String): MateriLatihan!
   updateMenu(icon: String, id: Int!, isActive: Boolean, name: String, orderNo: Int, parentId: Int, route: String, slug: String): Menu!
   updateOrangTua(email: String, hpAyah: String, hpIbu: String, hpOrangTua: String, hubungan: String, id: ID!, namaOrangTua: String): OrangTua!
   updatePelatih(catatan: String, desa: String, email: String, fotoUrl: String, id: ID!, kabupaten: String, kecamatan: String, namaLengkap: String, noHp: String, provinsi: String, status: String, tanggalLahir: String, tempatLahir: String): Pelatih!
+  updatePengumuman(id: ID!, isi: String, judul: String, tanggal: String, target: String): Pengumuman!
   updateRole(id: Int!, label: String, name: String!): Role!
   updateRolePermissions(input: UpdateRolePermissionsInput!): Role!
+  updateSeleksi(id: ID!, keterangan: String, lokasi: String, nama: String, tanggal: String): Seleksi!
+  updateSeleksiPeserta(catatan: String, id: ID!, nilai: Float, status: String): SeleksiPeserta!
   updateSiswa(agama: String, alamatLengkap: String, beratBadan: Float, catatan: String, desa: String, fotoUrl: String, id: ID!, jenisKelamin: String, kabupaten: String, kecamatan: String, kelompokUmurId: ID, klubSebelumnya: String, namaLengkap: String, namaPanggilan: String, nik: String, nisn: String, posisiId: ID, provinsi: String, status: String, tanggalLahir: String, tempatLahir: String, tinggiBadan: Float): Siswa!
+  updateSppTagihan(id: ID!, jatuhTempo: String, jumlah: Float, status: String): SppTagihan!
+  updateTesFisik(catatan: String, id: ID!, jenisTes: String, nilai: Float, satuan: String, tanggal: String): TesFisik!
+  updateTurnamen(hasil: String, id: ID!, kategoriUmur: String, lokasi: String, nama: String, tanggalMulai: String, tanggalSelesai: String): Turnamen!
   updateUserRoles(input: UpdateUserRolesInput!): User!
+}
+
+type Notifikasi {
+  createdAt: DateTime
+  id: ID!
+  isRead: Boolean!
+  isi: String!
+  judul: String!
+  penerimaUserId: String
+  sentVia: String!
+  siswaId: String
+  target: String!
+  tipe: String!
 }
 
 type OrangTua {
@@ -126,6 +324,15 @@ type OrangTua {
   id: ID!
   namaOrangTua: String!
   siswaId: String!
+}
+
+type PelanggaranSiswa {
+  createdAt: DateTime
+  id: ID!
+  keterangan: String
+  masterPelanggaranId: String
+  siswaId: String!
+  tanggal: String!
 }
 
 type Pelatih {
@@ -163,6 +370,16 @@ type PelatihLisensi {
   pelatihId: String!
 }
 
+type Pengumuman {
+  createdAt: DateTime
+  id: ID!
+  isi: String!
+  judul: String!
+  kelompokUmurId: String
+  tanggal: String
+  target: String!
+}
+
 type Permission {
   createdAt: DateTime!
   id: Int!
@@ -183,24 +400,47 @@ type Query {
   absensiByJadwal(jadwalId: ID!): [Absensi!]!
   absensiBySiswa(siswaId: ID!): [Absensi!]!
   activeMenuTree: [Menu!]!
+  bukuKas: [BukuKas!]!
+  dashboardSummary: DashboardSummary!
+  evaluasi: [Evaluasi!]!
+  inventaris: [Inventaris!]!
   jadwalById(id: ID!): JadwalLatihan!
   jadwalLatihan: [JadwalLatihan!]!
   kelompokUmur: [KelompokUmur!]!
+  klasemen(turnamenId: ID!): [KlasemenEntry!]!
+  logPelatih(pelatihId: ID): [LogPelatih!]!
   masterPelanggaran: [MasterPelanggaran!]!
   masterPosisi: [MasterPosisi!]!
+  match(turnamenId: ID): [Match!]!
+  matchEvent(matchId: ID!): [MatchEvent!]!
+  matchLineup(matchId: ID!): [MatchLineup!]!
+  materiKategori: [MateriKategori!]!
+  materiLatihan: [MateriLatihan!]!
   me: UserProfile!
   menus: [Menu!]!
+  notifikasi: [Notifikasi!]!
   orangTua: [OrangTua!]!
   orangTuaBySiswa(siswaId: ID!): OrangTua
+  pelanggaranSiswa: [PelanggaranSiswa!]!
   pelatih: [Pelatih!]!
   pelatihById(id: ID!): Pelatih!
   pelatihJabatan(pelatihId: ID!): [PelatihJabatan!]!
   pelatihLisensi(pelatihId: ID!): [PelatihLisensi!]!
+  pengumuman: [Pengumuman!]!
   permissions: [Permission!]!
   ping: String!
   roles: [Role!]!
+  seleksi: [Seleksi!]!
+  seleksiPeserta(seleksiId: ID!): [SeleksiPeserta!]!
   siswa: [Siswa!]!
   siswaById(id: ID!): Siswa!
+  sppPembayaran(tagihanId: ID!): [SppPembayaran!]!
+  sppTagihan: [SppTagihan!]!
+  sppTagihanBySiswa(siswaId: ID!): [SppTagihan!]!
+  tabungan: [Tabungan!]!
+  tesFisik: [TesFisik!]!
+  turnamen: [Turnamen!]!
+  turnamenPeserta(turnamenId: ID!): [TurnamenPeserta!]!
   user(id: String!): User!
   users: [User!]!
 }
@@ -212,6 +452,25 @@ type Role {
   name: String!
   permissionRoles: [PermissionRole!]!
   updatedAt: DateTime!
+}
+
+type Seleksi {
+  createdAt: DateTime
+  id: ID!
+  keterangan: String
+  lokasi: String
+  nama: String!
+  tanggal: String
+}
+
+type SeleksiPeserta {
+  catatan: String
+  createdAt: DateTime
+  id: ID!
+  nilai: Float
+  seleksiId: String!
+  siswaId: String!
+  status: String!
 }
 
 type Siswa {
@@ -239,6 +498,74 @@ type Siswa {
   tempatLahir: String
   tinggiBadan: Float
   updatedAt: DateTime
+}
+
+type SppPembayaran {
+  buktiUrl: String
+  createdAt: DateTime
+  id: ID!
+  jumlah: Float!
+  keterangan: String
+  metode: String
+  tagihanId: String!
+  tanggalBayar: String!
+}
+
+type SppTagihan {
+  bulan: Float!
+  createdAt: DateTime
+  id: ID!
+  jatuhTempo: String
+  jumlah: Float!
+  siswaId: String!
+  status: String!
+  tahun: Float!
+}
+
+type Tabungan {
+  createdAt: DateTime
+  id: ID!
+  jumlah: Float!
+  keterangan: String
+  siswaId: String!
+  tanggal: String!
+  tipe: String!
+}
+
+type TesFisik {
+  catatan: String
+  createdAt: DateTime
+  id: ID!
+  jenisTes: String!
+  kelompokUmurId: String
+  nilai: Float!
+  satuan: String
+  siswaId: String!
+  tanggal: String!
+}
+
+type Turnamen {
+  createdAt: DateTime
+  hasil: String
+  id: ID!
+  kategoriUmur: String
+  lokasi: String
+  nama: String!
+  tanggalMulai: String
+  tanggalSelesai: String
+}
+
+type TurnamenPeserta {
+  catatan: String
+  createdAt: DateTime
+  gol: Int!
+  id: ID!
+  kartuKuning: Int!
+  kartuMerah: Int!
+  menitBermain: Int
+  posisi: String
+  siswaId: String!
+  turnamenId: String!
 }
 
 input UpdateRolePermissionsInput {
