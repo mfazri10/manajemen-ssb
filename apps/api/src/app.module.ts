@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { join } from 'path';
 import appConfig from './config/app.config';
 import { DrizzleModule } from './drizzle/drizzle.module';
@@ -29,31 +31,26 @@ import { PendaftaranModule } from './modules/pendaftaran/pendaftaran.module';
 import { SubscriptionModule } from './modules/subscription/subscription.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { AuditLogModule } from './modules/audit-log/audit-log.module';
-import { APP_FILTER } from '@nestjs/core';
+import { GorModule } from './modules/gor/gor.module';
+import { LapanganModule } from './modules/lapangan/lapangan.module';
 import { GraphQLExceptionFilter } from './common/filters/graphql-exception.filter';
 import { AppResolver } from './app.resolver';
 
 @Module({
   imports: [
-    // Configurations
-    ConfigModule.forRoot({
-      isGlobal: true,
-      load: [appConfig],
-    }),
-
-    // Database
+    ConfigModule.forRoot({ isGlobal: true, load: [appConfig] }),
+    // Hardening: rate limiting global (100 request / 60 detik per IP)
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
     DrizzleModule,
-
-    // GraphQL Code-First
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       sortSchema: true,
-      playground: true, // Playground active
-      context: ({ req, res }: { req: unknown; res: unknown }) => ({ req, res }), // Inject request to context for guards
+      // Hardening: playground & introspection hanya di non-production
+      playground: process.env.NODE_ENV !== 'production',
+      introspection: process.env.NODE_ENV !== 'production',
+      context: ({ req, res }: { req: unknown; res: unknown }) => ({ req, res }),
     }),
-
-    // Modules
     AuthModule,
     UserModule,
     RoleModule,
@@ -78,13 +75,13 @@ import { AppResolver } from './app.resolver';
     SubscriptionModule,
     PaymentModule,
     AuditLogModule,
+    GorModule,
+    LapanganModule,
   ],
   providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
     AppResolver,
-    {
-      provide: APP_FILTER,
-      useClass: GraphQLExceptionFilter,
-    },
+    { provide: APP_FILTER, useClass: GraphQLExceptionFilter },
   ],
 })
 export class AppModule {}

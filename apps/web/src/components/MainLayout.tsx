@@ -16,7 +16,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const isAuthPage =
     pathname?.startsWith('/auth/login') ||
     pathname?.startsWith('/register') ||
-    pathname?.startsWith('/auth/');
+    pathname?.startsWith('/auth/') ||
+    pathname?.startsWith('/landing');
 
   const handleSignOut = async () => {
     try {

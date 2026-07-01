@@ -477,7 +477,70 @@ export const getTenantSchema = (slug: string) => {
     createdAt: timestamp('created_at').defaultNow(),
   });
 
-  return {
+  
+  // ===== GOR / Venue Management (Fase G1) =====
+  const gor = tenant.table('gor', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    nama: varchar('nama', { length: 100 }).notNull(),
+    alamat: text('alamat'),
+    kota: varchar('kota', { length: 50 }),
+    telepon: varchar('telepon', { length: 20 }),
+    deskripsi: text('deskripsi'),
+    fotoUrl: text('foto_url'),
+    jamBuka: time('jam_buka'),
+    jamTutup: time('jam_tutup'),
+    status: varchar('status', { length: 20 }).default('aktif'), // 'aktif','nonaktif','maintenance'
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+  });
+
+  const lapangan = tenant.table('lapangan', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    gorId: uuid('gor_id').notNull().references(() => gor.id, { onDelete: 'cascade' }),
+    nama: varchar('nama', { length: 100 }).notNull(),
+    tipe: varchar('tipe', { length: 30 }).notNull(), // 'futsal','badminton','basket','voli','tenis','lainnya'
+    permukaan: varchar('permukaan', { length: 30 }), // 'vinyl','rumput_sintetis','kayu','beton'
+    indoor: boolean('indoor').default(true),
+    tarifPerJam: decimal('tarif_per_jam', { precision: 12, scale: 2 }).default('0').notNull(),
+    kapasitas: integer('kapasitas'),
+    fotoUrl: text('foto_url'),
+    status: varchar('status', { length: 20 }).default('tersedia'), // 'tersedia','maintenance','nonaktif'
+    keterangan: text('keterangan'),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+  });
+
+  const tarifLapangan = tenant.table('tarif_lapangan', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    lapanganId: uuid('lapangan_id').notNull().references(() => lapangan.id, { onDelete: 'cascade' }),
+    hari: varchar('hari', { length: 10 }), // 'weekday','weekend','senin'..'minggu', null=default
+    jamMulai: time('jam_mulai'),
+    jamSelesai: time('jam_selesai'),
+    tarif: decimal('tarif', { precision: 12, scale: 2 }).notNull(),
+    label: varchar('label', { length: 30 }), // 'peak','off_peak','normal'
+    createdAt: timestamp('created_at').defaultNow(),
+  });
+
+  const booking = tenant.table('booking', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    lapanganId: uuid('lapangan_id').notNull().references(() => lapangan.id, { onDelete: 'restrict' }),
+    namaPemesan: varchar('nama_pemesan', { length: 100 }).notNull(),
+    teleponPemesan: varchar('telepon_pemesan', { length: 20 }),
+    tanggal: date('tanggal').notNull(),
+    jamMulai: time('jam_mulai').notNull(),
+    jamSelesai: time('jam_selesai').notNull(),
+    totalHarga: decimal('total_harga', { precision: 12, scale: 2 }).default('0').notNull(),
+    statusBooking: varchar('status_booking', { length: 20 }).default('pending'), // 'pending','terkonfirmasi','selesai','batal'
+    statusBayar: varchar('status_bayar', { length: 20 }).default('belum_bayar'), // 'belum_bayar','dp','lunas'
+    catatan: text('catatan'),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+  }, (t) => ({
+    // Cegah double-booking pada lapangan+tanggal+jam mulai yang sama
+    uniqSlot: unique('uniq_booking_slot').on(t.lapanganId, t.tanggal, t.jamMulai),
+  }));
+
+return {
     kelompokUmur,
     masterPosisi,
     masterPelanggaran,
@@ -516,5 +579,9 @@ export const getTenantSchema = (slug: string) => {
     langgananAkademi,
     payment,
     auditLog,
+    gor,
+    lapangan,
+    tarifLapangan,
+    booking,
   };
 };
