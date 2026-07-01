@@ -9,7 +9,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "db:seed:gor": "tsx seed-gor.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.2",
@@ -20,6 +21,7 @@
     "@types/pg": "^8.20.0",
     "@workspace/typescript-config": "*",
     "drizzle-kit": "^0.31.10",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "tsx": "^4.19.3"
   }
 }
