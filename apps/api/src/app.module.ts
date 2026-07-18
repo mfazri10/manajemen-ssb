@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
-import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { GqlThrottlerGuard } from './common/guards/gql-throttler.guard';
+import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor';
 import { join } from 'path';
 import appConfig from './config/app.config';
 import { DrizzleModule } from './drizzle/drizzle.module';
@@ -34,12 +36,14 @@ import { PaymentModule } from './modules/payment/payment.module';
 import { AuditLogModule } from './modules/audit-log/audit-log.module';
 import { GorModule } from './modules/gor/gor.module';
 import { LapanganModule } from './modules/lapangan/lapangan.module';
+import { OnboardingModule } from './modules/onboarding/onboarding.module';
 import { GraphQLExceptionFilter } from './common/filters/graphql-exception.filter';
 import { AppResolver } from './app.resolver';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, load: [appConfig] }),
+    ScheduleModule.forRoot(),
     // Hardening: rate limiting global (100 request / 60 detik per IP)
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
     DrizzleModule,
@@ -78,11 +82,13 @@ import { AppResolver } from './app.resolver';
     AuditLogModule,
     GorModule,
     LapanganModule,
+    OnboardingModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: GqlThrottlerGuard },
     AppResolver,
     { provide: APP_FILTER, useClass: GraphQLExceptionFilter },
+    { provide: APP_INTERCEPTOR, useClass: AuditLogInterceptor },
   ],
 })
 export class AppModule {}

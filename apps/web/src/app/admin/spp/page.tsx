@@ -4,7 +4,7 @@ import { useQuery, useMutation, gql } from '@apollo/client';
 import { Button } from '@/components/ui/button';
 import { DataTable, ColumnDef } from '@/components/ui/table/data-table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Plus, Edit2, Trash2, Loader2, AlertCircle, CreditCard } from 'lucide-react';
+import { Plus, Edit2, Trash2, Loader2, AlertCircle, CreditCard, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 
 const GET_TAGIHAN = gql`query GetTagihan { sppTagihan { id siswaId bulan tahun jumlah status jatuhTempo } }`;
@@ -12,6 +12,7 @@ const GET_SISWA = gql`query GetSiswaSpp { siswa { id namaLengkap } }`;
 const CREATE_TAGIHAN = gql`mutation CreateTagihan($siswaId:ID!,$bulan:Int!,$tahun:Int!,$jumlah:Float!,$jatuhTempo:String,$status:String) { createSppTagihan(siswaId:$siswaId,bulan:$bulan,tahun:$tahun,jumlah:$jumlah,jatuhTempo:$jatuhTempo,status:$status) { id } }`;
 const UPDATE_TAGIHAN = gql`mutation UpdateTagihan($id:ID!,$jumlah:Float,$status:String,$jatuhTempo:String) { updateSppTagihan(id:$id,jumlah:$jumlah,status:$status,jatuhTempo:$jatuhTempo) { id } }`;
 const DELETE_TAGIHAN = gql`mutation DeleteTagihan($id:ID!) { deleteSppTagihan(id:$id) }`;
+const GENERATE_SPP_OTOMATIS = gql`mutation GenerateSppOtomatis { generateSppTagihanOtomatis }`;
 
 const GET_PEMBAYARAN = gql`query GetPembayaran($tagihanId:ID!) { sppPembayaran(tagihanId:$tagihanId) { id tanggalBayar jumlah metode buktiUrl keterangan } }`;
 const CREATE_PEMBAYARAN = gql`mutation CreateBayar($tagihanId:ID!,$tanggalBayar:String!,$jumlah:Float!,$metode:String,$keterangan:String) { createSppPembayaran(tagihanId:$tagihanId,tanggalBayar:$tanggalBayar,jumlah:$jumlah,metode:$metode,keterangan:$keterangan) { id } }`;
@@ -32,6 +33,19 @@ export default function AdminSppPage() {
   const [deleteTagihan] = useMutation(DELETE_TAGIHAN);
   const [createBayar] = useMutation(CREATE_PEMBAYARAN);
   const [deleteBayar] = useMutation(DELETE_PEMBAYARAN);
+  const [generateSpp, { loading: generating }] = useMutation(GENERATE_SPP_OTOMATIS);
+
+  const handleGenerateOtomatis = async () => {
+    if (!confirm("Hasilkan tagihan SPP otomatis untuk semua siswa aktif bulan ini?")) return;
+    try {
+      const { data } = await generateSpp();
+      const count = data?.generateSppTagihanOtomatis || 0;
+      toast.success(`Berhasil menghasilkan ${count} tagihan SPP untuk bulan ini.`);
+      refetch();
+    } catch (e: any) {
+      toast.error(e?.message || "Gagal menghasilkan tagihan otomatis.");
+    }
+  };
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [bayarDialogOpen, setBayarDialogOpen] = useState(false);
@@ -39,7 +53,20 @@ export default function AdminSppPage() {
   const [selected, setSelected] = useState<Tagihan | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const empty = { siswaId: '', bulan: '', tahun: new Date().getFullYear().toString(), jumlah: '', jatuhTempo: '', status: 'belum' };
+  const today = new Date();
+  const currentMonth = (today.getMonth() + 1).toString();
+  const currentYear = today.getFullYear().toString();
+  // Tanggal 10 bulan ini
+  const defaultDueDate = `${currentYear}-${currentMonth.padStart(2, '0')}-10`;
+
+  const empty = { 
+    siswaId: '', 
+    bulan: currentMonth, 
+    tahun: currentYear, 
+    jumlah: '150000', 
+    jatuhTempo: defaultDueDate, 
+    status: 'belum' 
+  };
   const [f, setF] = useState(empty);
   const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }));
 
@@ -111,7 +138,38 @@ export default function AdminSppPage() {
       </div>
       {error ? <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-md flex items-center gap-2 text-destructive text-xs"><AlertCircle className="w-4 h-4" /><span className="font-bold">{error.message}</span></div> : (
         <div className="bg-card border border-border rounded-md p-5 shadow-2xs">
-          <DataTable data={data?.sppTagihan || []} columns={columns} loading={loading} searchPlaceholder="Cari tagihan..." searchKeys={['siswaId']} emptyMessage="Belum ada tagihan." actions={<Button onClick={handleOpenCreate} className="bg-primary hover:bg-primary/95 text-primary-foreground font-bold rounded-md gap-1.5 h-9 px-3 text-xs cursor-pointer"><Plus className="w-3.5 h-3.5" /><span>Buat Tagihan</span></Button>} />
+          <DataTable
+            data={data?.sppTagihan || []}
+            columns={columns}
+            loading={loading}
+            searchPlaceholder="Cari tagihan..."
+            searchKeys={['siswaId']}
+            emptyMessage="Belum ada tagihan."
+            actions={
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={handleGenerateOtomatis}
+                  disabled={generating}
+                  variant="outline"
+                  className="border-border hover:bg-muted font-bold rounded-md gap-1.5 h-9 px-3 text-xs cursor-pointer flex items-center"
+                >
+                  {generating ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                  )}
+                  <span>Generate Otomatis</span>
+                </Button>
+                <Button
+                  onClick={handleOpenCreate}
+                  className="bg-primary hover:bg-primary/95 text-primary-foreground font-bold rounded-md gap-1.5 h-9 px-3 text-xs cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Buat Tagihan</span>
+                </Button>
+              </div>
+            }
+          />
         </div>
       )}
       {/* Dialog Tagihan */}

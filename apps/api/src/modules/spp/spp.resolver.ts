@@ -1,6 +1,7 @@
-import { Resolver, Query, Mutation, Args, ID, Float } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args, ID, Float, Int } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { SppService } from './spp.service';
+import { SppSchedulerService } from './spp-scheduler.service';
 import { SppTagihan, SppPembayaran } from './entities/spp.entity';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
@@ -10,7 +11,10 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 @Resolver()
 @UseGuards(AuthGuard, PermissionsGuard)
 export class SppResolver {
-  constructor(private readonly service: SppService) {}
+  constructor(
+    private readonly service: SppService,
+    private readonly schedulerService: SppSchedulerService
+  ) {}
 
   @Query(() => [SppTagihan], { name: 'sppTagihan' })
   @RequirePermissions('spp.index')

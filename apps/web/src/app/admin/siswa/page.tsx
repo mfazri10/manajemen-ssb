@@ -7,7 +7,7 @@ import { DataTable, ColumnDef } from '@/components/ui/table/data-table';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
-import { Plus, Edit2, Trash2, Loader2, AlertCircle, Eye } from 'lucide-react';
+import { Plus, Edit2, Trash2, Loader2, AlertCircle, Eye, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 
 const GET_SISWA = gql`query GetSiswa { siswa { id namaLengkap namaPanggilan nisn nik tanggalLahir jenisKelamin status kelompokUmurId posisiId } }`;
@@ -36,6 +36,73 @@ export default function AdminSiswaPage() {
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
   const [selected, setSelected] = useState<SiswaData | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+
+  const downloadSampleCSV = () => {
+    const content = "Nama Lengkap,Tanggal Lahir,Kelompok Umur,No HP Ortu,NISN,NIK\nBagas Adi Nugroho,2014-04-12,U-12,08123456789,123456,12345678\nRonaldo Junior,2016-09-08,U-10,08129988776,,\nLionel Budi,2012-01-20,U-14,08124433221,123457,";
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "template-siswa.csv");
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Template CSV berhasil diunduh.");
+  };
+
+  const handleImportSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!csvFile) {
+      toast.error("Pilih file CSV terlebih dahulu.");
+      return;
+    }
+
+    setImporting(true);
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const csvContent = event.target?.result as string;
+
+      try {
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+        };
+        const activeSlug = localStorage.getItem('activeAkademiSlug');
+        if (activeSlug) {
+          headers['x-tenant-slug'] = activeSlug;
+        }
+
+        const response = await fetch(`${apiBaseUrl}/v1/siswa/import`, {
+          method: 'POST',
+          headers,
+          credentials: 'include',
+          body: JSON.stringify({ csvContent }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.message || "Gagal mengimpor file.");
+        }
+
+        toast.success(result.message || "Impor berhasil.");
+        setImportDialogOpen(false);
+        setCsvFile(null);
+        refetch();
+      } catch (err: any) {
+        toast.error(err?.message || "Terjadi kesalahan saat mengimpor.");
+      } finally {
+        setImporting(false);
+      }
+    };
+
+    reader.readAsText(csvFile);
+  };
 
   const empty = { namaLengkap: '', namaPanggilan: '', nisn: '', nik: '', tanggalLahir: '', tempatLahir: '', jenisKelamin: 'L', agama: '', kelompokUmurId: '', posisiId: '', tinggiBadan: '', beratBadan: '', status: 'aktif', klubSebelumnya: '', provinsi: '', kabupaten: '', kecamatan: '', desa: '', alamatLengkap: '', catatan: '' };
   const [f, setF] = useState(empty);
@@ -107,7 +174,33 @@ export default function AdminSiswaPage() {
         <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-md flex items-center gap-2 text-destructive text-xs"><AlertCircle className="w-4 h-4" /><span className="font-bold">{error.message}</span></div>
       ) : (
         <div className="bg-card border border-border rounded-md p-5 shadow-2xs">
-          <DataTable data={data?.siswa || []} columns={columns} loading={loading} searchPlaceholder="Cari siswa..." searchKeys={['namaLengkap', 'namaPanggilan', 'nisn']} emptyMessage="Belum ada siswa." actions={<Button onClick={handleOpenCreate} className="bg-primary hover:bg-primary/95 text-primary-foreground font-bold rounded-md gap-1.5 h-9 px-3 text-xs cursor-pointer"><Plus className="w-3.5 h-3.5" /><span>Tambah Siswa</span></Button>} />
+          <DataTable
+            data={data?.siswa || []}
+            columns={columns}
+            loading={loading}
+            searchPlaceholder="Cari siswa..."
+            searchKeys={['namaLengkap', 'namaPanggilan', 'nisn']}
+            emptyMessage="Belum ada siswa."
+            actions={
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => setImportDialogOpen(true)}
+                  variant="outline"
+                  className="border-border hover:bg-muted font-bold rounded-md gap-1.5 h-9 px-3 text-xs cursor-pointer"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Import CSV</span>
+                </Button>
+                <Button
+                  onClick={handleOpenCreate}
+                  className="bg-primary hover:bg-primary/95 text-primary-foreground font-bold rounded-md gap-1.5 h-9 px-3 text-xs cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Tambah Siswa</span>
+                </Button>
+              </div>
+            }
+          />
         </div>
       )}
 
@@ -170,6 +263,71 @@ export default function AdminSiswaPage() {
               <Button type="button" onClick={() => setDialogOpen(false)} className="px-4 py-2 border border-border bg-background hover:bg-muted text-muted-foreground font-bold text-2xs rounded-xl cursor-pointer">Batal</Button>
               <Button type="submit" disabled={submitting} className="px-4 py-2 bg-primary hover:bg-primary/95 text-primary-foreground font-bold text-2xs rounded-xl cursor-pointer flex items-center gap-2">
                 {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}<span>{formMode === 'create' ? 'Tambah' : 'Simpan'}</span>
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Import CSV */}
+      <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+        <DialogContent className="bg-card border border-border text-foreground max-w-md rounded-2xl p-6 shadow-xl">
+          <DialogHeader>
+            <DialogTitle className="font-black text-xl">Import Siswa via CSV</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleImportSubmit} className="space-y-4">
+            <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-xl space-y-2">
+              <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+                Panduan Kolom CSV:
+              </p>
+              <ul className="text-[10px] text-slate-400 font-medium space-y-1 list-disc list-inside">
+                <li><strong className="text-white">Nama Lengkap</strong> (Wajib)</li>
+                <li><strong className="text-white">Tanggal Lahir</strong> (Wajib, format: YYYY-MM-DD)</li>
+                <li><strong>Kelompok Umur</strong> (Opsional, e.g. U-6, U-8, U-10, dst.)</li>
+                <li><strong>No HP Ortu</strong> (Opsional)</li>
+                <li><strong>NISN</strong> (Opsional)</li>
+                <li><strong>NIK</strong> (Opsional)</li>
+              </ul>
+              <button
+                type="button"
+                onClick={downloadSampleCSV}
+                className="text-[10px] font-black text-indigo-400 hover:text-indigo-300 transition-colors uppercase tracking-wider mt-1 block"
+              >
+                Unduh Template CSV →
+              </button>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-5xs font-bold text-muted-foreground uppercase tracking-widest block mb-2">
+                Pilih File CSV
+              </label>
+              <input
+                type="file"
+                accept=".csv"
+                required
+                onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
+                className="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-[10px] file:font-black file:bg-indigo-600/20 file:text-indigo-400 hover:file:bg-indigo-600/30 cursor-pointer file:cursor-pointer border border-border rounded-xl p-2 bg-background focus:outline-none"
+              />
+            </div>
+
+            <DialogFooter className="pt-4 border-t border-border flex items-center justify-end gap-2.5">
+              <Button
+                type="button"
+                onClick={() => {
+                  setImportDialogOpen(false);
+                  setCsvFile(null);
+                }}
+                className="px-4 py-2 border border-border bg-background hover:bg-muted text-muted-foreground font-bold text-2xs rounded-xl cursor-pointer"
+              >
+                Batal
+              </Button>
+              <Button
+                type="submit"
+                disabled={importing || !csvFile}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-2xs rounded-xl cursor-pointer flex items-center gap-2"
+              >
+                {importing && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                <span>Import</span>
               </Button>
             </DialogFooter>
           </form>

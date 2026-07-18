@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, varchar, integer, serial, unique } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, boolean, varchar, integer, serial, unique, jsonb } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
   id: text('id').primaryKey(),
@@ -94,6 +94,8 @@ export const akademi = pgTable('akademi', {
   id: text('id').primaryKey(),
   nama: varchar('nama', { length: 100 }).notNull(),
   slug: varchar('slug', { length: 50 }).notNull().unique(),
+  // Jenis produk: akademi | gor | futsal | badminton | gym | yoga | pilates | lainnya
+  type: varchar('type', { length: 30 }).default('akademi').notNull(),
   logoUrl: text('logo_url'),
   alamat: text('alamat'),
   noHp: varchar('no_hp', { length: 20 }),
@@ -104,6 +106,46 @@ export const akademi = pgTable('akademi', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
+
+// Tracking langganan / free trial per akademi
+export const subscriptions = pgTable('subscriptions', {
+  id: text('id').primaryKey(),
+  akademiId: text('akademi_id').notNull().references(() => akademi.id, { onDelete: 'cascade' }),
+  // plan: trial | starter | growth | pro
+  plan: varchar('plan', { length: 20 }).default('trial').notNull(),
+  // status: active | expired | cancelled
+  status: varchar('status', { length: 20 }).default('active').notNull(),
+  startedAt: timestamp('started_at').defaultNow().notNull(),
+  expiresAt: timestamp('expires_at'),  // null = tidak ada batas (paket permanent)
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Jawaban survey pemilihan produk saat onboarding
+export const userOnboardingSurvey = pgTable('user_onboarding_survey', {
+  id: serial('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  // Jenis produk yang dipilih user (ssb | akademi_badminton | venue_futsal | gym | dll)
+  productType: varchar('product_type', { length: 30 }).notNull(),
+  // Simpan semua jawaban survey dalam format fleksibel
+  rawAnswers: jsonb('raw_answers'),
+  isCompleted: boolean('is_completed').default(false).notNull(),
+  completedAt: timestamp('completed_at'),
+}, (t) => [
+  unique().on(t.userId),  // 1 user hanya boleh 1 survey
+]);
+
+// Tracking progress checklist onboarding per user (UX progressive disclosure)
+export const onboardingProgress = pgTable('onboarding_progress', {
+  id: serial('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  // step: profile | siswa | jadwal | spp | done
+  step: varchar('step', { length: 50 }).notNull(),
+  completed: boolean('completed').default(false).notNull(),
+  completedAt: timestamp('completed_at'),
+}, (t) => [
+  unique().on(t.userId, t.step),  // 1 user, 1 step, 1 record
+]);
 
 export const userAkademis = pgTable('user_akademis', {
   id: serial('id').primaryKey(),
@@ -125,6 +167,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
   accounts: many(accounts),
   userAkademis: many(userAkademis),
+  onboardingSurvey: many(userOnboardingSurvey),
+  onboardingProgress: many(onboardingProgress),
 }));
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
@@ -161,9 +205,22 @@ export const menusRelations = relations(menus, ({ one, many }) => ({
 
 export const akademiRelations = relations(akademi, ({ many }) => ({
   userAkademis: many(userAkademis),
+  subscriptions: many(subscriptions),
 }));
 
 export const userAkademisRelations = relations(userAkademis, ({ one }) => ({
   user: one(users, { fields: [userAkademis.userId], references: [users.id] }),
   akademi: one(akademi, { fields: [userAkademis.akademiId], references: [akademi.id] }),
+}));
+
+export const subscriptionsRelations = relations(subscriptions, ({ one }) => ({
+  akademi: one(akademi, { fields: [subscriptions.akademiId], references: [akademi.id] }),
+}));
+
+export const userOnboardingSurveyRelations = relations(userOnboardingSurvey, ({ one }) => ({
+  user: one(users, { fields: [userOnboardingSurvey.userId], references: [users.id] }),
+}));
+
+export const onboardingProgressRelations = relations(onboardingProgress, ({ one }) => ({
+  user: one(users, { fields: [onboardingProgress.userId], references: [users.id] }),
 }));

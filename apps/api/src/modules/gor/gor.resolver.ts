@@ -41,7 +41,12 @@ export class GorResolver {
     @Args('status', { nullable: true }) status?: string,
   ) {
     const slug = await this.gorService.resolveTenantSlug(userId);
-    return this.gorService.create(slug, { nama, alamat, kota, telepon, deskripsi, fotoUrl, jamBuka, jamTutup, status });
+    const data: any = { nama };
+    const fields = { alamat, kota, telepon, deskripsi, fotoUrl, jamBuka, jamTutup, status };
+    for (const [k, v] of Object.entries(fields)) {
+      if (v !== undefined) data[k] = v;
+    }
+    return this.gorService.create(slug, data);
   }
 
   @Mutation(() => Gor, { name: 'updateGor' })
@@ -60,7 +65,12 @@ export class GorResolver {
     @Args('status', { nullable: true }) status?: string,
   ) {
     const slug = await this.gorService.resolveTenantSlug(userId);
-    return this.gorService.update(slug, id, { nama, alamat, kota, telepon, deskripsi, fotoUrl, jamBuka, jamTutup, status });
+    const data: any = {};
+    const fields = { nama, alamat, kota, telepon, deskripsi, fotoUrl, jamBuka, jamTutup, status };
+    for (const [k, v] of Object.entries(fields)) {
+      if (v !== undefined) data[k] = v;
+    }
+    return this.gorService.update(slug, id, data);
   }
 
   @Mutation(() => Boolean, { name: 'deleteGor' })

@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useSession, signOut } from "@/lib/auth-client";
 import { usePermissions } from "@/features/authentication/hooks/usePermissions";
 import { useQuery, gql } from "@apollo/client";
+import { useMenuAccess } from "@/hooks/useMenuAccess";
 import {
   Sidebar,
   SidebarContent,
@@ -80,6 +81,15 @@ export function AppSidebar() {
   const router = useRouter();
   const { data: session, isPending: sessionPending } = useSession();
   const { hasPermission } = usePermissions();
+  const { canAccessAbsensi, canAccessKeuangan, canAccessEvaluasi } = useMenuAccess();
+
+  const isMenuLocked = (slug: string) => {
+    const s = slug.toLowerCase();
+    if (s.includes("absensi") && !canAccessAbsensi) return true;
+    if ((s.includes("keuangan") || s.includes("spp") || s.includes("tagihan")) && !canAccessKeuangan) return true;
+    if ((s.includes("evaluasi") || s.includes("laporan") || s.includes("rapor")) && !canAccessEvaluasi) return true;
+    return false;
+  };
 
   // Fetch dynamic menu tree from backend
   const { data: menuData, loading: menuLoading } = useQuery<{ activeMenuTree: MenuItem[] }>(
@@ -624,18 +634,30 @@ export function AppSidebar() {
                           </CollapsibleTrigger>
                           <CollapsibleContent>
                             <SidebarMenuSub>
-                              {visibleSubMenus.map((sub) => (
-                                <SidebarMenuSubItem key={sub.id}>
-                                  <SidebarMenuSubButton
-                                    asChild
-                                    isActive={pathname === sub.route}
-                                  >
-                                    <Link href={sub.route || "#"} className="text-2xs">
-                                      {sub.name}
-                                    </Link>
-                                  </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                              ))}
+                              {visibleSubMenus.map((sub) => {
+                                const subLocked = isMenuLocked(sub.slug);
+                                return (
+                                  <SidebarMenuSubItem key={sub.id}>
+                                    <SidebarMenuSubButton
+                                      asChild
+                                      isActive={pathname === sub.route && !subLocked}
+                                      className={subLocked ? "opacity-40 cursor-not-allowed select-none" : ""}
+                                      title={subLocked ? "Selesaikan langkah onboarding sebelumnya untuk membuka menu ini" : undefined}
+                                    >
+                                      {subLocked ? (
+                                        <div className="flex items-center justify-between w-full py-1 pr-1 pl-2 text-slate-500 font-medium">
+                                          <span className="text-2xs">{sub.name}</span>
+                                          <LucideIcons.Lock className="w-2.5 h-2.5 shrink-0" />
+                                        </div>
+                                      ) : (
+                                        <Link href={sub.route || "#"} className="text-2xs">
+                                          {sub.name}
+                                        </Link>
+                                      )}
+                                    </SidebarMenuSubButton>
+                                  </SidebarMenuSubItem>
+                                );
+                              })}
                             </SidebarMenuSub>
                           </CollapsibleContent>
                         </SidebarMenuItem>
@@ -643,20 +665,34 @@ export function AppSidebar() {
                     );
                   }
 
+                  const locked = isMenuLocked(group.slug);
+
                   // Render Standalone Root Link
                   return (
                     <SidebarMenuItem key={group.id}>
                       <SidebarMenuButton
                         asChild
-                        isActive={pathname === group.route}
+                        isActive={pathname === group.route && !locked}
+                        className={locked ? "opacity-40 cursor-not-allowed select-none" : ""}
+                        title={locked ? "Selesaikan langkah onboarding sebelumnya untuk membuka menu ini" : undefined}
                       >
-                        <Link
-                          href={group.route || "#"}
-                          className="flex items-center gap-3 px-2 py-1.5 rounded-lg transition-all"
-                        >
-                          <MenuIcon name={group.icon || undefined} className="w-4 h-4" />
-                          <span className="text-2xs font-bold">{group.name}</span>
-                        </Link>
+                        {locked ? (
+                          <div className="flex items-center justify-between w-full px-2 py-1.5 rounded-lg text-slate-500 font-medium">
+                            <div className="flex items-center gap-3">
+                              <MenuIcon name={group.icon || undefined} className="w-4 h-4 text-slate-500" />
+                              <span className="text-2xs font-bold">{group.name}</span>
+                            </div>
+                            <LucideIcons.Lock className="w-3 h-3 shrink-0" />
+                          </div>
+                        ) : (
+                          <Link
+                            href={group.route || "#"}
+                            className="flex items-center gap-3 px-2 py-1.5 rounded-lg transition-all"
+                          >
+                            <MenuIcon name={group.icon || undefined} className="w-4 h-4" />
+                            <span className="text-2xs font-bold">{group.name}</span>
+                          </Link>
+                        )}
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   );

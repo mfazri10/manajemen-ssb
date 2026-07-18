@@ -5,7 +5,7 @@ import { DrizzleService } from '../../drizzle/drizzle.service';
 import { Akademi } from './entities/akademi.entity';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { akademi, userAkademis, roleUsers } from '@workspace/db';
+import { akademi, userAkademis, roleUsers, subscriptions } from '@workspace/db';
 import { eq, and } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 
@@ -25,6 +25,7 @@ export class TenantResolver {
         id: akademi.id,
         nama: akademi.nama,
         slug: akademi.slug,
+        type: akademi.type,
         logoUrl: akademi.logoUrl,
         alamat: akademi.alamat,
         noHp: akademi.noHp,
@@ -37,9 +38,14 @@ export class TenantResolver {
       })
       .from(userAkademis)
       .innerJoin(akademi, eq(userAkademis.akademiId, akademi.id))
-      .where(eq(userAkademis.userId, userId));
-
-    return rows;
+    return rows.map(r => ({
+      ...r,
+      logoUrl: r.logoUrl ?? undefined,
+      alamat: r.alamat ?? undefined,
+      noHp: r.noHp ?? undefined,
+      email: r.email ?? undefined,
+      website: r.website ?? undefined,
+    })) as unknown as Akademi[];
   }
 
   @Mutation(() => Akademi, { name: 'registerAkademi' })
@@ -47,6 +53,7 @@ export class TenantResolver {
     @CurrentUser() userId: string,
     @Args('nama') nama: string,
     @Args('slug') slug: string,
+    @Args('type', { defaultValue: 'akademi' }) type: string,
     @Args('alamat', { nullable: true }) alamat?: string,
     @Args('noHp', { nullable: true }) noHp?: string,
     @Args('email', { nullable: true }) email?: string,
@@ -84,6 +91,7 @@ export class TenantResolver {
         id: newAkademiId,
         nama,
         slug,
+        type,
         alamat,
         noHp,
         email,
@@ -124,11 +132,25 @@ export class TenantResolver {
         });
     }
 
-    // 7. Trigger dynamic schema provisioning & seed data default
+    // 7. Buat subscriptions free trial 7 hari
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    await db.insert(subscriptions).values({
+      id: randomUUID(),
+      akademiId: newAkademiId,
+      plan: 'trial',
+      status: 'active',
+      startedAt: new Date(),
+      expiresAt: expiresAt,
+    });
+
+    // 8. Trigger dynamic schema provisioning & seed data default
     try {
-      await this.provisioningService.createTenant(slug);
+      await this.provisioningService.createTenant(slug, type);
     } catch (err: any) {
       // Rollback jika provisioning skema gagal
+      await db.delete(subscriptions).where(eq(subscriptions.akademiId, newAkademiId));
       await db.delete(userAkademis).where(eq(userAkademis.akademiId, newAkademiId));
       await db.delete(akademi).where(eq(akademi.id, newAkademiId));
       throw new BadRequestException(

@@ -29,6 +29,9 @@ export class Akademi {
   @Field(() => String)
   paket!: string;
 
+  @Field(() => String)
+  type!: string;
+
   @Field(() => Boolean)
   isActive!: boolean;
 

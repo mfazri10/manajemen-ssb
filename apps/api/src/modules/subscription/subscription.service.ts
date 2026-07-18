@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { DrizzleService } from '../../drizzle/drizzle.service';
 import { getTenantSchema } from '@workspace/db';
-import { akademi, userAkademis } from '@workspace/db';
+import { akademi, userAkademis, subscriptions } from '@workspace/db';
 import { eq, and, desc } from 'drizzle-orm';
 
 @Injectable()
@@ -85,5 +85,39 @@ export class SubscriptionService {
     if (!existing.length) throw new NotFoundException('Langganan tidak ditemukan.');
     const [result] = await this.dbService.db.update(t.langgananAkademi).set({ status: 'suspended' }).where(eq(t.langgananAkademi.id, id)).returning();
     return result;
+  }
+
+  async findActiveSubscription(userId: string) {
+    const [ua] = await this.dbService.db
+      .select({ akademiId: userAkademis.akademiId })
+      .from(userAkademis)
+      .where(and(eq(userAkademis.userId, userId), eq(userAkademis.isDefault, true)))
+      .limit(1);
+
+    if (!ua) return null;
+
+    const [sub] = await this.dbService.db
+      .select()
+      .from(subscriptions)
+      .where(eq(subscriptions.akademiId, ua.akademiId))
+      .orderBy(desc(subscriptions.createdAt))
+      .limit(1);
+
+    if (!sub) return null;
+
+    const daysRemaining = sub.expiresAt
+      ? Math.max(0, Math.ceil((new Date(sub.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+      : 9999;
+
+    return {
+      id: sub.id,
+      akademiId: sub.akademiId,
+      plan: sub.plan,
+      status: sub.status,
+      startedAt: sub.startedAt,
+      expiresAt: sub.expiresAt || undefined,
+      daysRemaining,
+      isTrial: sub.plan === 'trial',
+    };
   }
 }

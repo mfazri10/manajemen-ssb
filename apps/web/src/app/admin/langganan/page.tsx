@@ -19,12 +19,12 @@ interface LanggananData { id: string; paketId: string; tanggalMulai: string; tan
 
 const fmt = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n);
 
-const paketColors: Record<string, { bg: string; border: string; badge: string }> = {
+const paketColors = {
   free: { bg: 'bg-gray-500/5', border: 'border-gray-500/20', badge: 'bg-gray-500/10 text-gray-600' },
   starter: { bg: 'bg-blue-500/5', border: 'border-blue-500/20', badge: 'bg-blue-500/10 text-blue-600' },
   growth: { bg: 'bg-green-500/5', border: 'border-green-500/20', badge: 'bg-green-500/10 text-green-600' },
   pro: { bg: 'bg-purple-500/5', border: 'border-purple-500/20', badge: 'bg-purple-500/10 text-purple-600' },
-};
+} as const;
 
 export default function LanggananPage() {
   const { data: paketData, loading: paketLoading, error: paketError } = useQuery<{ paketLangganan: PaketData[] }>(GET_PAKET, { fetchPolicy: 'cache-and-network' });
@@ -95,7 +95,10 @@ export default function LanggananPage() {
         {paketLoading ? <div className="flex items-center justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div> :
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {paketList.filter(p => p.aktif).map(paket => {
-            const colors = paketColors[paket.nama.toLowerCase()] || paketColors.free;
+            const name = paket.nama.toLowerCase();
+            const colors = name in paketColors 
+              ? paketColors[name as keyof typeof paketColors] 
+              : paketColors.free;
             const isCurrent = currentLangganan?.paketId === paket.id;
             return (
               <div key={paket.id} className={`${colors.bg} border ${colors.border} rounded-xl p-5 shadow-2xs hover:shadow-md transition-shadow space-y-3`}>

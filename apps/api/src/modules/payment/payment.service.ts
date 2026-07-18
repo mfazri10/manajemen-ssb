@@ -1,12 +1,16 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { DrizzleService } from '../../drizzle/drizzle.service';
+import { XenditService } from './xendit.service';
 import { getTenantSchema } from '@workspace/db';
 import { akademi, userAkademis } from '@workspace/db';
 import { eq, and, desc } from 'drizzle-orm';
 
 @Injectable()
 export class PaymentService {
-  constructor(private readonly dbService: DrizzleService) {}
+  constructor(
+    private readonly dbService: DrizzleService,
+    private readonly xenditService: XenditService,
+  ) {}
 
   private getTenant(slug: string) {
     return getTenantSchema(slug);
@@ -40,20 +44,38 @@ export class PaymentService {
   async createPayment(slug: string, akademiId: string, langgananId: string, method: string) {
     const t = this.getTenant(slug);
 
-    // Look up langganan to get amount
+    // Ambil paket langganan untuk menghitung jumlah pembayaran
     let amount = 0;
+    let descNama = 'Pembayaran Langganan';
     if (langgananId) {
       const langganan = await this.dbService.db.select().from(t.langgananAkademi).where(eq(t.langgananAkademi.id, langgananId)).limit(1);
       if (langganan.length) {
         const paket = await this.dbService.db.select().from(t.paketLangganan).where(eq(t.paketLangganan.id, langganan[0]!.paketId)).limit(1);
-        if (paket.length) amount = Number(paket[0]!.harga);
+        if (paket.length) {
+          amount = Number(paket[0]!.harga);
+          descNama = `Langganan Paket ${paket[0]!.nama}`;
+        }
       }
     }
 
-    const externalId = `PAY-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+    const uuidRaw = Math.random().toString(36).substring(2, 10);
+    // Format externalId terisolasi multi-tenant dengan melampirkan slug di depannya
+    const externalId = `${slug}:PAY-${Date.now()}-${uuidRaw}`;
+    const payerEmail = `billing@${slug}.com`;
 
-    // Stub: log the external gateway call
-    console.log(`[Payment Gateway] Creating payment: externalId=${externalId}, amount=${amount}, method=${method}`);
+    let invoiceUrl = '';
+    let apiStatus = 'pending';
+
+    try {
+      // Hubungi Xendit Gateway API untuk membuat link invoice digital
+      const invoice = await this.xenditService.createInvoice(externalId, amount, payerEmail, descNama);
+      invoiceUrl = invoice.invoiceUrl;
+      apiStatus = invoice.status.toLowerCase();
+    } catch (e: any) {
+      console.error(`[Xendit Integration Failed, fallback to manual]: ${e?.message}`);
+    }
+
+    const metadataObj = { invoiceUrl, generatedAt: new Date().toISOString() };
 
     const [result] = await this.dbService.db.insert(t.payment).values({
       akademiId,
@@ -61,7 +83,8 @@ export class PaymentService {
       amount: String(amount),
       method,
       externalId,
-      status: 'pending',
+      status: apiStatus,
+      metadata: JSON.stringify(metadataObj),
     } as any).returning();
     return result;
   }
@@ -70,10 +93,7 @@ export class PaymentService {
     const t = this.getTenant(slug);
     const payment = await this.findById(slug, id);
 
-    // Stub: simulate checking with external gateway
-    console.log(`[Payment Gateway] Checking status for externalId=${payment.externalId}`);
-
-    // For stub, randomly succeed or stay pending
+    // Status checking simulasi & sinkronisasi
     const newStatus = payment.status === 'pending' ? 'success' : payment.status;
     if (newStatus === 'success' && payment.status === 'pending') {
       const [result] = await this.dbService.db.update(t.payment)
@@ -83,5 +103,49 @@ export class PaymentService {
       return result;
     }
     return payment;
+  }
+
+  /**
+   * Endpoint Webhook Callback Handler untuk Xendit
+   */
+  async handleXenditWebhook(token: string, payload: any) {
+    if (!this.xenditService.verifyCallbackToken(token)) {
+      throw new UnauthorizedException('Callback token dari Xendit tidak valid.');
+    }
+
+    const externalId = payload.external_id;
+    if (!externalId || !externalId.includes(':')) {
+      return { success: false, message: 'Format external_id tidak valid.' };
+    }
+
+    const [slug] = externalId.split(':');
+    const status = payload.status; // 'PAID' atau 'EXPIRED'
+
+    const t = this.getTenant(slug);
+
+    if (status === 'PAID') {
+      await this.dbService.db.update(t.payment)
+        .set({
+          status: 'success',
+          paidAt: new Date(payload.paid_at || new Date()),
+          metadata: JSON.stringify({
+            xenditPaymentId: payload.id,
+            paymentMethod: payload.payment_method,
+            paymentChannel: payload.payment_channel,
+            paidAmount: payload.paid_amount,
+          }),
+        })
+        .where(eq(t.payment.externalId, externalId));
+      
+      console.log(`[Xendit Webhook Success] Transaksi lunas untuk tenant ${slug}, externalId: ${externalId}`);
+    } else if (status === 'EXPIRED') {
+      await this.dbService.db.update(t.payment)
+        .set({ status: 'expired' })
+        .where(eq(t.payment.externalId, externalId));
+      
+      console.log(`[Xendit Webhook Expired] Transaksi kedaluwarsa untuk tenant ${slug}, externalId: ${externalId}`);
+    }
+
+    return { success: true };
   }
 }

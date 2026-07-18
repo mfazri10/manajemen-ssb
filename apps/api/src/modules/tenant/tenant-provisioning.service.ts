@@ -14,16 +14,33 @@ export class TenantProvisioningService {
   /**
    * Membuat tenant baru: schema + tabel + seed data default
    */
-  async createTenant(akademiSlug: string): Promise<void> {
+  async createTenant(akademiSlug: string, productType: string): Promise<void> {
     const db = this.dbService.db;
     const schemaName = `tenant_${akademiSlug}`;
-    this.logger.log(`Creating tenant schema: ${schemaName}`);
+    this.logger.log(`Creating tenant schema: ${schemaName} with productType: ${productType}`);
 
     // 1. Buat schema secara dinamis
     await db.execute(sql`CREATE SCHEMA IF NOT EXISTS ${sql.identifier(schemaName)}`);
 
-    // 2. Jalankan SQL template untuk membuat semua tabel
-    const templatePath = path.join(process.cwd(), '../../database/tenant_schema_template.sql');
+    // 2. Pilih template SQL sesuai jenis produk
+    let templateFile = 'tenant_schema_template_akademi.sql';
+    const normalizedType = productType.toLowerCase();
+    
+    if (normalizedType === 'gor' || normalizedType.startsWith('venue_') || ['futsal', 'badminton'].includes(normalizedType)) {
+      templateFile = 'tenant_schema_template_gor.sql';
+    } else if (
+      ['gym', 'fitness', 'yoga', 'pilates', 'crossfit', 'zumba', 'muaythai_mma', 'dance_studio', 'functional', 'senam_aerobik', 'calisthenics', 'renang_dewasa'].includes(normalizedType)
+    ) {
+      templateFile = 'tenant_schema_template_fitness.sql';
+    } else if (
+      ['outbound', 'turnamen_organizer', 'running_event', 'cycling_club', 'hiking_club', 'diving_club', 'surfing_school'].includes(normalizedType) ||
+      normalizedType.startsWith('event_') ||
+      normalizedType.startsWith('komunitas_')
+    ) {
+      templateFile = 'tenant_schema_template_event.sql';
+    }
+
+    const templatePath = path.join(process.cwd(), '../../database', templateFile);
     const rawSql = fs.readFileSync(templatePath, 'utf-8');
 
     // Mengarahkan eksekusi template ke schema yang baru dibuat
@@ -40,15 +57,21 @@ export class TenantProvisioningService {
         await tx.execute(sql.raw(stmt));
       }
       
-      // 3. Seed data default dalam schema baru
-      await this.seedDefaultDataInTx(tx);
+      // 3. Seed data default dalam schema baru sesuai jenis produk
+      if (templateFile === 'tenant_schema_template_gor.sql') {
+        // Data default untuk GOR sudah ada di dalam script template_gor.sql, tapi kita bisa tambahkan custom seed jika perlu
+      } else if (templateFile === 'tenant_schema_template_fitness.sql') {
+        // Data default untuk Fitness sudah ada di dalam script template_fitness.sql
+      } else {
+        await this.seedDefaultDataInTx(tx);
+      }
     });
 
     this.logger.log(`Tenant ${schemaName} created successfully`);
   }
 
   /**
-   * Seed data default ke transaksi yang sedang aktif
+   * Seed data default ke transaksi yang sedang aktif (untuk Akademi)
    */
   private async seedDefaultDataInTx(tx: any): Promise<void> {
     // Posisi default
@@ -67,6 +90,7 @@ export class TenantProvisioningService {
         ('LW', 'Sayap Kiri'),
         ('ST', 'Penyerang'),
         ('CF', 'Penyerang Tengah')
+      ON CONFLICT DO NOTHING
     `);
 
     // Kelompok umur default
@@ -79,6 +103,7 @@ export class TenantProvisioningService {
         ('U-14', 13, 14),
         ('U-16', 15, 16),
         ('U-18', 17, 18)
+      ON CONFLICT DO NOTHING
     `);
   }
 

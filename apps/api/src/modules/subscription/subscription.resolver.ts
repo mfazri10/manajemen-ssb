@@ -1,7 +1,7 @@
 import { Resolver, Query, Mutation, Args, ID, Float } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { SubscriptionService } from './subscription.service';
-import { PaketLangganan, LanggananAkademi } from './entities/subscription.entity';
+import { PaketLangganan, LanggananAkademi, SubscriptionPublic } from './entities/subscription.entity';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { RequirePermissions } from '../../common/decorators/permissions.decorator';
@@ -11,6 +11,11 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 @UseGuards(AuthGuard, PermissionsGuard)
 export class SubscriptionResolver {
   constructor(private readonly service: SubscriptionService) {}
+
+  @Query(() => SubscriptionPublic, { name: 'mySubscription', nullable: true })
+  async getMySubscription(@CurrentUser() userId: string) {
+    return this.service.findActiveSubscription(userId);
+  }
 
   @Query(() => [PaketLangganan], { name: 'paketLangganan' })
   @RequirePermissions('subscription.index')

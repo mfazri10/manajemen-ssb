@@ -23,6 +23,7 @@ type Akademi {
   noHp: String
   paket: String!
   slug: String!
+  type: String!
   updatedAt: DateTime!
   website: String
 }
@@ -356,9 +357,10 @@ type Mutation {
   deleteTurnamenPeserta(id: ID!): Boolean!
   deleteUser(id: String!): Boolean!
   markNotifikasiRead(id: ID!): Notifikasi!
-  registerAkademi(alamat: String, email: String, nama: String!, noHp: String, slug: String!, website: String): Akademi!
+  registerAkademi(alamat: String, email: String, nama: String!, noHp: String, slug: String!, type: String! = "akademi", website: String): Akademi!
   sendEmail(message: String!, subject: String!, to: String!): Boolean!
   sendWhatsApp(message: String!, phone: String!): Boolean!
+  submitOnboardingSurvey(productType: String!, rawAnswersJson: String): UserOnboardingSurvey!
   subscribePaket(akademiId: String!, paketId: ID!): LanggananAkademi!
   updateAbsensi(id: ID!, keterangan: String, status: String, tanggal: String): Absensi!
   updateBukuKas(id: ID!, jumlah: Float, kategori: String, keterangan: String, tanggal: String, tipe: String): BukuKas!
@@ -404,6 +406,11 @@ type Notifikasi {
   siswaId: String
   target: String!
   tipe: String!
+}
+
+type OnboardingStep {
+  completed: Boolean!
+  step: String!
 }
 
 type OrangTua {
@@ -564,6 +571,9 @@ type Query {
   me: UserProfile!
   menus: [Menu!]!
   myAkademis: [Akademi!]!
+  myOnboardingProgress: [OnboardingStep!]!
+  myOnboardingSurvey: UserOnboardingSurvey
+  mySubscription: SubscriptionPublic
   notifikasi: [Notifikasi!]!
   orangTua: [OrangTua!]!
   orangTuaBySiswa(siswaId: ID!): OrangTua
@@ -674,6 +684,17 @@ type SppTagihan {
   tahun: Float!
 }
 
+type SubscriptionPublic {
+  akademiId: String!
+  daysRemaining: Float!
+  expiresAt: DateTime
+  id: ID!
+  isTrial: Boolean!
+  plan: String!
+  startedAt: DateTime!
+  status: String!
+}
+
 type Tabungan {
   createdAt: DateTime
   id: ID!
@@ -739,6 +760,15 @@ type User {
   name: String!
   roleUsers: [UserRoleUser!]!
   updatedAt: DateTime!
+}
+
+type UserOnboardingSurvey {
+  completedAt: DateTime
+  id: ID!
+  isCompleted: Boolean!
+  productType: String!
+  rawAnswers: String
+  userId: String!
 }
 
 type UserProfile {

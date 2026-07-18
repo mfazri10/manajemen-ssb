@@ -45,7 +45,12 @@ export class LapanganResolver {
     @Args('keterangan', { nullable: true }) keterangan?: string,
   ) {
     const slug = await this.lapanganService.resolveTenantSlug(userId);
-    return this.lapanganService.create(slug, { gorId, nama, tipe, permukaan, indoor, tarifPerJam, kapasitas, fotoUrl, status, keterangan });
+    const data: any = { gorId, nama, tipe };
+    const fields = { permukaan, indoor, tarifPerJam, kapasitas, fotoUrl, status, keterangan };
+    for (const [k, v] of Object.entries(fields)) {
+      if (v !== undefined) data[k] = v;
+    }
+    return this.lapanganService.create(slug, data);
   }
 
   @Mutation(() => Lapangan, { name: 'updateLapangan' })
@@ -64,7 +69,12 @@ export class LapanganResolver {
     @Args('keterangan', { nullable: true }) keterangan?: string,
   ) {
     const slug = await this.lapanganService.resolveTenantSlug(userId);
-    return this.lapanganService.update(slug, id, { nama, tipe, permukaan, indoor, tarifPerJam, kapasitas, fotoUrl, status, keterangan });
+    const data: any = {};
+    const fields = { nama, tipe, permukaan, indoor, tarifPerJam, kapasitas, fotoUrl, status, keterangan };
+    for (const [k, v] of Object.entries(fields)) {
+      if (v !== undefined) data[k] = v;
+    }
+    return this.lapanganService.update(slug, id, data);
   }
 
   @Mutation(() => Boolean, { name: 'deleteLapangan' })

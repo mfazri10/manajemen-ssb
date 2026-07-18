@@ -3,10 +3,10 @@ import { ObjectType, Field, ID, Float } from '@nestjs/graphql';
 @ObjectType()
 export class Gor {
   @Field(() => ID)
-  id: string;
+  id!: string;
 
   @Field()
-  nama: string;
+  nama!: string;
 
   @Field(() => String, { nullable: true })
   alamat?: string;

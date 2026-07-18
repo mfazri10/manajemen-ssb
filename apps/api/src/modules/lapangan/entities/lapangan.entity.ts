@@ -3,16 +3,16 @@ import { ObjectType, Field, ID, Float, Int } from '@nestjs/graphql';
 @ObjectType()
 export class Lapangan {
   @Field(() => ID)
-  id: string;
+  id!: string;
 
   @Field(() => ID)
-  gorId: string;
+  gorId!: string;
 
   @Field()
-  nama: string;
+  nama!: string;
 
   @Field()
-  tipe: string;
+  tipe!: string;
 
   @Field(() => String, { nullable: true })
   permukaan?: string;
@@ -21,7 +21,7 @@ export class Lapangan {
   indoor?: boolean;
 
   @Field(() => Float)
-  tarifPerJam: number;
+  tarifPerJam!: number;
 
   @Field(() => Int, { nullable: true })
   kapasitas?: number;

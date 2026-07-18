@@ -24,12 +24,12 @@ interface PendaftaranData {
   createdAt: string;
 }
 
-const statusBadge: Record<string, { bg: string; text: string; label: string }> = {
+const statusBadge = {
   pending: { bg: 'bg-amber-500/10', text: 'text-amber-600', label: 'Pending' },
   disapproved: { bg: 'bg-red-500/10', text: 'text-red-600', label: 'Ditolak' },
   lunas: { bg: 'bg-green-500/10', text: 'text-green-600', label: 'Lunas' },
   catatan: { bg: 'bg-blue-500/10', text: 'text-blue-600', label: 'Catatan' },
-};
+} as const;
 
 export default function PendaftaranPage() {
   const { data, loading, error, refetch } = useQuery<{ pendaftaran: PendaftaranData[] }>(GET_PENDAFTARAN, { fetchPolicy: 'cache-and-network' });
@@ -101,7 +101,10 @@ export default function PendaftaranPage() {
     { header: 'Kelompok Umur', cell: p => p.kelompokUmurId || '-', className: 'text-xs' },
     { header: 'Tgl Daftar', cell: p => p.createdAt ? new Date(p.createdAt).toLocaleDateString('id-ID') : '-', className: 'text-xs' },
     { header: 'Status', cell: p => {
-      const badge = statusBadge[p.status] || statusBadge.pending;
+      const statusKey = p.status.toLowerCase();
+      const badge = statusKey in statusBadge
+        ? statusBadge[statusKey as keyof typeof statusBadge]
+        : statusBadge.pending;
       return <span className={`text-2xs font-bold px-2 py-0.5 rounded-full ${badge.bg} ${badge.text}`}>{badge.label}</span>;
     }, className: 'text-xs' },
     { header: 'Aksi', className: 'text-right w-24', cell: p => (

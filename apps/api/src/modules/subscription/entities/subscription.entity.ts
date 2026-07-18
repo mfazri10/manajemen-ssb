@@ -26,3 +26,15 @@ export class LanggananAkademi {
   @Field(() => Date, { nullable: true }) createdAt?: Date;
   @Field(() => Date, { nullable: true }) updatedAt?: Date;
 }
+
+@ObjectType()
+export class SubscriptionPublic {
+  @Field(() => ID) id!: string;
+  @Field(() => String) akademiId!: string;
+  @Field(() => String) plan!: string;
+  @Field(() => String) status!: string;
+  @Field(() => Date) startedAt!: Date;
+  @Field(() => Date, { nullable: true }) expiresAt?: Date;
+  @Field(() => Number) daysRemaining!: number;
+  @Field(() => Boolean) isTrial!: boolean;
+}

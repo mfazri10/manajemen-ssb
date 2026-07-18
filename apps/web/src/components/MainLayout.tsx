@@ -8,6 +8,9 @@ import { AppSidebar } from '@/components/AppSidebar';
 import { LogOut, Loader2, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery, gql } from '@apollo/client';
+import DemoBanner from '@/components/DemoBanner';
+import TrialBanner from '@/components/TrialBanner';
+import OnboardingChecklist from '@/components/OnboardingChecklist';
 
 const GET_MY_AKADEMIS = gql`
   query GetMyAkademis {
@@ -28,7 +31,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     pathname?.startsWith('/auth/login') ||
     pathname?.startsWith('/register') ||
     pathname?.startsWith('/auth/') ||
-    pathname?.startsWith('/landing');
+    pathname?.startsWith('/landing') ||
+    pathname?.startsWith('/onboarding');
 
   const { data: akademiData, loading: akademiLoading } = useQuery(GET_MY_AKADEMIS, {
     skip: isAuthPage || isPending || !session?.user,
@@ -38,7 +42,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     if (!isAuthPage && !isPending && session?.user && !akademiLoading && akademiData) {
       if (akademiData.myAkademis.length === 0) {
-        router.push('/register/academy');
+        router.push('/onboarding/survey');
       }
     }
   }, [akademiData, akademiLoading, isAuthPage, isPending, session, router]);
@@ -71,15 +75,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     if (pathname === '/admin/posisi') return 'Master Posisi';
     if (pathname === '/admin/pelanggaran') return 'Master Pelanggaran';
     if (pathname === '/admin/pelatih') return 'Manajemen Pelatih';
-    if (pathname === '/admin/jadwal') return 'Jadwal Latihan';
-    if (pathname === '/admin/absensi') return 'Absensi Latihan';
     if (pathname === '/admin/orang-tua') return 'Data Orang Tua';
     if (pathname === '/admin/spp') return 'SPP & Tagihan';
     if (pathname === '/admin/buku-kas') return 'Buku Kas';
     if (pathname === '/admin/tabungan') return 'Tabungan Siswa';
     if (pathname === '/admin/tes-fisik') return 'Tes Fisik';
     if (pathname === '/admin/evaluasi') return 'Evaluasi Siswa';
-    if (pathname === '/admin/pelanggaran') return 'Pelanggaran Siswa';
     if (pathname === '/admin/pengumuman') return 'Pengumuman';
     if (pathname === '/admin/turnamen') return 'Turnamen';
     if (pathname === '/admin/inventaris') return 'Inventaris';
@@ -105,6 +106,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         
         {/* Main Content Pane */}
         <main className="flex-1 flex flex-col min-h-screen overflow-y-auto">
+          {/* Top Banners */}
+          <DemoBanner />
+          <TrialBanner />
+
           {/* Top Navbar Header */}
           <div className="p-4 border-b border-border bg-card/85 backdrop-blur-md flex items-center justify-between sticky top-0 z-40">
             <div className="flex items-center gap-4">
@@ -153,6 +158,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             {children}
           </div>
         </main>
+
+        {/* Floating Onboarding Checklist */}
+        <OnboardingChecklist />
       </div>
     </SidebarProvider>
   );

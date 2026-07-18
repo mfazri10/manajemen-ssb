@@ -25,12 +25,12 @@ interface PaymentData {
 
 const fmt = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n);
 
-const statusBadge: Record<string, { bg: string; text: string }> = {
+const statusBadge = {
   paid: { bg: 'bg-green-500/10', text: 'text-green-600' },
   pending: { bg: 'bg-amber-500/10', text: 'text-amber-600' },
   failed: { bg: 'bg-red-500/10', text: 'text-red-600' },
   expired: { bg: 'bg-gray-500/10', text: 'text-gray-600' },
-};
+} as const;
 
 export default function PaymentPage() {
   const { data, loading, error, refetch } = useQuery<{ payments: PaymentData[] }>(GET_PAYMENTS, { fetchPolicy: 'cache-and-network' });
@@ -74,7 +74,10 @@ export default function PaymentPage() {
     { header: 'Amount', cell: p => <span className="font-bold">{fmt(p.amount)}</span>, className: 'text-xs' },
     { header: 'Method', cell: p => <span className="capitalize">{p.method}</span>, className: 'text-xs' },
     { header: 'Status', cell: p => {
-      const badge = statusBadge[p.status] || statusBadge.pending;
+      const statusKey = p.status.toLowerCase();
+      const badge = statusKey in statusBadge
+        ? statusBadge[statusKey as keyof typeof statusBadge]
+        : statusBadge.pending;
       return <span className={`text-2xs font-bold px-2 py-0.5 rounded-full ${badge.bg} ${badge.text}`}>{p.status}</span>;
     }, className: 'text-xs' },
     { header: 'Paid At', cell: p => p.paidAt ? new Date(p.paidAt).toLocaleString('id-ID') : '-', className: 'text-xs' },

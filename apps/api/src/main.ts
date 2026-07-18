@@ -8,13 +8,15 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const isProd = process.env.NODE_ENV === 'production';
 
+  const helmetOptions: any = {
+    crossOriginEmbedderPolicy: false,
+  };
+  if (!isProd) {
+    helmetOptions.contentSecurityPolicy = false;
+  }
+
   // Hardening: security headers (helmet). CSP dimatikan di dev agar GraphQL Playground jalan.
-  app.use(
-    helmet({
-      contentSecurityPolicy: isProd ? undefined : false,
-      crossOriginEmbedderPolicy: false,
-    }),
-  );
+  app.use(helmet(helmetOptions));
 
   const frontendOrigins = (process.env.FRONTEND_URL || 'http://localhost:3001')
     .split(',')
