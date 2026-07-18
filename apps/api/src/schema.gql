@@ -12,6 +12,21 @@ type Absensi {
   tanggal: String!
 }
 
+type Akademi {
+  alamat: String
+  createdAt: DateTime!
+  email: String
+  id: String!
+  isActive: Boolean!
+  logoUrl: String
+  nama: String!
+  noHp: String
+  paket: String!
+  slug: String!
+  updatedAt: DateTime!
+  website: String
+}
+
 type AuditLog {
   akademiId: String!
   aksi: String!
@@ -74,6 +89,21 @@ type Evaluasi {
   teknik: Float
 }
 
+type Gor {
+  alamat: String
+  createdAt: DateTime
+  deskripsi: String
+  fotoUrl: String
+  id: ID!
+  jamBuka: String
+  jamTutup: String
+  kota: String
+  nama: String!
+  status: String
+  telepon: String
+  updatedAt: DateTime
+}
+
 type Inventaris {
   createdAt: DateTime
   id: ID!
@@ -127,6 +157,22 @@ type LanggananAkademi {
   status: String!
   tanggalBerakhir: String!
   tanggalMulai: String!
+  updatedAt: DateTime
+}
+
+type Lapangan {
+  createdAt: DateTime
+  fotoUrl: String
+  gorId: ID!
+  id: ID!
+  indoor: Boolean
+  kapasitas: Int
+  keterangan: String
+  nama: String!
+  permukaan: String
+  status: String
+  tarifPerJam: Float!
+  tipe: String!
   updatedAt: DateTime
 }
 
@@ -237,9 +283,11 @@ type Mutation {
   createBukuKas(jumlah: Float!, kategori: String, keterangan: String, tanggal: String!, tipe: String!): BukuKas!
   createEvaluasi(catatanPelatih: String, fisik: Float, mental: Float, pelatihId: ID, semester: String!, siswaId: ID!, tahunAjaran: String!, taktik: Float, teknik: Float): Evaluasi!
   createFeature(fungsi: [String!]!, id: String!, label: String!): Boolean!
+  createGor(alamat: String, deskripsi: String, fotoUrl: String, jamBuka: String, jamTutup: String, kota: String, nama: String!, status: String, telepon: String): Gor!
   createInventaris(jumlah: Int, kategori: String, keterangan: String, kondisi: String, nama: String!, satuan: String): Inventaris!
   createJadwal(hari: String, kelompokUmurId: ID, lokasi: String, materi: String, status: String, tanggal: String, waktuMulai: String, waktuSelesai: String): JadwalLatihan!
   createKelompokUmur(nama: String!, usiaMax: Float, usiaMin: Float): KelompokUmur!
+  createLapangan(fotoUrl: String, gorId: ID!, indoor: Boolean, kapasitas: Int, keterangan: String, nama: String!, permukaan: String, status: String, tarifPerJam: Float, tipe: String!): Lapangan!
   createLogPelatih(catatan: String, durasiMenit: Int, jadwalId: ID, kegiatan: String!, materiId: ID, pelatihId: ID!, tanggal: String!): LogPelatih!
   createMasterPelanggaran(nama: String!, poin: Float): MasterPelanggaran!
   createMasterPosisi(kode: String!, nama: String!): MasterPosisi!
@@ -274,9 +322,11 @@ type Mutation {
   deleteBukuKas(id: ID!): Boolean!
   deleteEvaluasi(id: ID!): Boolean!
   deleteFeature(id: String!): Boolean!
+  deleteGor(id: ID!): Boolean!
   deleteInventaris(id: ID!): Boolean!
   deleteJadwal(id: ID!): Boolean!
   deleteKelompokUmur(id: ID!): Boolean!
+  deleteLapangan(id: ID!): Boolean!
   deleteLogPelatih(id: ID!): Boolean!
   deleteMasterPelanggaran(id: ID!): Boolean!
   deleteMasterPosisi(id: ID!): Boolean!
@@ -306,6 +356,7 @@ type Mutation {
   deleteTurnamenPeserta(id: ID!): Boolean!
   deleteUser(id: String!): Boolean!
   markNotifikasiRead(id: ID!): Notifikasi!
+  registerAkademi(alamat: String, email: String, nama: String!, noHp: String, slug: String!, website: String): Akademi!
   sendEmail(message: String!, subject: String!, to: String!): Boolean!
   sendWhatsApp(message: String!, phone: String!): Boolean!
   subscribePaket(akademiId: String!, paketId: ID!): LanggananAkademi!
@@ -313,9 +364,11 @@ type Mutation {
   updateBukuKas(id: ID!, jumlah: Float, kategori: String, keterangan: String, tanggal: String, tipe: String): BukuKas!
   updateEvaluasi(catatanPelatih: String, fisik: Float, id: ID!, mental: Float, semester: String, tahunAjaran: String, taktik: Float, teknik: Float): Evaluasi!
   updateFeature(fungsi: [String!]!, label: String!, newId: String!, oldId: String!): Boolean!
+  updateGor(alamat: String, deskripsi: String, fotoUrl: String, id: ID!, jamBuka: String, jamTutup: String, kota: String, nama: String, status: String, telepon: String): Gor!
   updateInventaris(id: ID!, jumlah: Int, kategori: String, keterangan: String, kondisi: String, nama: String, satuan: String): Inventaris!
   updateJadwal(hari: String, id: ID!, kelompokUmurId: ID, lokasi: String, materi: String, status: String, tanggal: String, waktuMulai: String, waktuSelesai: String): JadwalLatihan!
   updateKelompokUmur(id: ID!, nama: String, usiaMax: Float, usiaMin: Float): KelompokUmur!
+  updateLapangan(fotoUrl: String, id: ID!, indoor: Boolean, kapasitas: Int, keterangan: String, nama: String, permukaan: String, status: String, tarifPerJam: Float, tipe: String): Lapangan!
   updateLogPelatih(catatan: String, durasiMenit: Int, id: ID!, kegiatan: String): LogPelatih!
   updateMasterPelanggaran(id: ID!, nama: String, poin: Float): MasterPelanggaran!
   updateMasterPosisi(id: ID!, kode: String, nama: String): MasterPosisi!
@@ -490,12 +543,16 @@ type Query {
   bukuKas: [BukuKas!]!
   dashboardSummary: DashboardSummary!
   evaluasi: [Evaluasi!]!
+  gor: [Gor!]!
+  gorById(id: ID!): Gor!
   inventaris: [Inventaris!]!
   jadwalById(id: ID!): JadwalLatihan!
   jadwalLatihan: [JadwalLatihan!]!
   kelompokUmur: [KelompokUmur!]!
   klasemen(turnamenId: ID!): [KlasemenEntry!]!
   langgananAkademi(akademiId: String!): [LanggananAkademi!]!
+  lapangan(gorId: ID): [Lapangan!]!
+  lapanganById(id: ID!): Lapangan!
   logPelatih(pelatihId: ID): [LogPelatih!]!
   masterPelanggaran: [MasterPelanggaran!]!
   masterPosisi: [MasterPosisi!]!
@@ -506,6 +563,7 @@ type Query {
   materiLatihan: [MateriLatihan!]!
   me: UserProfile!
   menus: [Menu!]!
+  myAkademis: [Akademi!]!
   notifikasi: [Notifikasi!]!
   orangTua: [OrangTua!]!
   orangTuaBySiswa(siswaId: ID!): OrangTua

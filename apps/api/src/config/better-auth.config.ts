@@ -16,5 +16,7 @@ export const auth = betterAuth({
     enabled: true,
   },
   basePath: '/v1/auth',
-  trustedOrigins: [process.env.FRONTEND_URL || 'http://localhost:3001'],
+  trustedOrigins: (process.env.FRONTEND_URL || 'http://localhost:3001')
+    .split(',')
+    .map((url) => url.trim()),
 });

@@ -6,6 +6,14 @@ const httpLink = createHttpLink({
     : 'http://localhost:3000/graphql',
   // Menjaga agar session Better Auth (cookies) terkirim saat fetching GraphQL
   credentials: 'include',
+  headers: {
+    get 'x-tenant-slug'() {
+      if (typeof window !== 'undefined') {
+        return localStorage.getItem('activeAkademiSlug') || '';
+      }
+      return '';
+    }
+  }
 });
 
 export const apolloClient = new ApolloClient({

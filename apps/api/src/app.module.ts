@@ -3,7 +3,8 @@ import { ConfigModule } from '@nestjs/config';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { GqlThrottlerGuard } from './common/guards/gql-throttler.guard';
 import { join } from 'path';
 import appConfig from './config/app.config';
 import { DrizzleModule } from './drizzle/drizzle.module';
@@ -79,7 +80,7 @@ import { AppResolver } from './app.resolver';
     LapanganModule,
   ],
   providers: [
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: GqlThrottlerGuard },
     AppResolver,
     { provide: APP_FILTER, useClass: GraphQLExceptionFilter },
   ],

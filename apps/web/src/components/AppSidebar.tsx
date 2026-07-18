@@ -207,27 +207,29 @@ export function AppSidebar() {
                           </>
                         )}
                         {hasPermission("menu.manage") && (
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton asChild isActive={pathname === "/admin/menu"}>
-                              <Link href="/admin/menu" className="text-2xs text-indigo-600 font-bold">
-                                Kelola Menu
-                              </Link>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton asChild isActive={pathname === "/admin/langganan"}>
-                            <Link href="/admin/langganan" className="text-2xs">
-                              Langganan
-                            </Link>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton asChild isActive={pathname === "/admin/audit-log"}>
-                            <Link href="/admin/audit-log" className="text-2xs">
-                              Audit Log
-                            </Link>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
+                          <>
+                            <SidebarMenuSubItem>
+                              <SidebarMenuSubButton asChild isActive={pathname === "/admin/menu"}>
+                                <Link href="/admin/menu" className="text-2xs text-indigo-600 font-bold">
+                                  Kelola Menu
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                            <SidebarMenuSubItem>
+                              <SidebarMenuSubButton asChild isActive={pathname === "/admin/langganan"}>
+                                <Link href="/admin/langganan" className="text-2xs">
+                                  Langganan
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                            <SidebarMenuSubItem>
+                              <SidebarMenuSubButton asChild isActive={pathname === "/admin/audit-log"}>
+                                <Link href="/admin/audit-log" className="text-2xs">
+                                  Audit Log
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          </>
                         )}
                       </SidebarMenuSub>
                     </CollapsibleContent>

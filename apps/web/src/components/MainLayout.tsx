@@ -1,12 +1,23 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession, signOut } from '@/lib/auth-client';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { LogOut, Loader2, User } from 'lucide-react';
 import { toast } from 'sonner';
+import { useQuery, gql } from '@apollo/client';
+
+const GET_MY_AKADEMIS = gql`
+  query GetMyAkademis {
+    myAkademis {
+      id
+      nama
+      slug
+    }
+  }
+`;
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -18,6 +29,20 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     pathname?.startsWith('/register') ||
     pathname?.startsWith('/auth/') ||
     pathname?.startsWith('/landing');
+
+  const { data: akademiData, loading: akademiLoading } = useQuery(GET_MY_AKADEMIS, {
+    skip: isAuthPage || isPending || !session?.user,
+    fetchPolicy: 'cache-and-network',
+  });
+
+  useEffect(() => {
+    if (!isAuthPage && !isPending && session?.user && !akademiLoading && akademiData) {
+      if (akademiData.myAkademis.length === 0) {
+        router.push('/register/academy');
+      }
+    }
+  }, [akademiData, akademiLoading, isAuthPage, isPending, session, router]);
+
 
   const handleSignOut = async () => {
     try {

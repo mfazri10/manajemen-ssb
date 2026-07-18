@@ -16,14 +16,19 @@ async function bootstrap() {
     }),
   );
 
+  const frontendOrigins = (process.env.FRONTEND_URL || 'http://localhost:3001')
+    .split(',')
+    .map((url) => url.trim());
+
   // CORS — origin dibatasi via environment variable.
   app.enableCors({
     origin: [
-      process.env.FRONTEND_URL || 'http://localhost:3001',
+      ...frontendOrigins,
       process.env.MOBILE_URL || 'http://localhost:8081',
     ],
     credentials: true,
   });
+
 
   app.useGlobalPipes(
     new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),

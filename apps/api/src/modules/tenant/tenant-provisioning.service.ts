@@ -29,7 +29,7 @@ export class TenantProvisioningService {
     // Mengarahkan eksekusi template ke schema yang baru dibuat
     // Kita jalankan SET search_path di dalam transaction block untuk keamanan pool
     await db.transaction(async (tx) => {
-      await tx.execute(sql`SET search_path TO ${sql.identifier(schemaName)}`);
+      await tx.execute(sql`SET LOCAL search_path TO ${sql.identifier(schemaName)}, public`);
       
       const statements = rawSql
         .split(';')
@@ -110,7 +110,7 @@ export class TenantProvisioningService {
       this.logger.log(`Migrating: ${schemaName}`);
 
       await db.transaction(async (tx) => {
-        await tx.execute(sql`SET search_path TO ${sql.identifier(schemaName)}`);
+        await tx.execute(sql`SET LOCAL search_path TO ${sql.identifier(schemaName)}, public`);
         await tx.execute(sql.raw(migrationSQL));
       });
     }
