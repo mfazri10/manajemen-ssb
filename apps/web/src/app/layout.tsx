@@ -22,8 +22,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" className={cn("font-sans", inter.variable, montserratHeading.variable)}>
-      <body className="antialiased bg-background text-foreground">
+    <html lang="id" className={cn("font-sans", inter.variable, montserratHeading.variable)} suppressHydrationWarning>
+      <body className="antialiased bg-background text-foreground" suppressHydrationWarning>
         <ApolloWrapper>
           <MainLayout>
             {children}
