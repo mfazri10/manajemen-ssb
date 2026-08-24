@@ -148,21 +148,24 @@ export default function HomePage() {
                 fallback={
                   <div className="p-5 rounded-2xl border border-dashed border-border bg-background/50 flex flex-col items-center justify-center text-center opacity-50">
                     <span className="text-lg">🔒</span>
-                    <span className="font-extrabold text-2xs text-muted-foreground/60 uppercase tracking-widest mt-2">Siswa Management</span>
+                    <span className="font-extrabold text-2xs text-muted-foreground/60 uppercase tracking-widest mt-2">Manajemen Siswa</span>
                     <span className="text-4xs text-muted-foreground/40 font-mono mt-1">Butuh: siswa.create</span>
                   </div>
                 }
               >
-                <div className="p-5 bg-background border border-border hover:border-primary/40 rounded-2xl transition-all flex justify-between items-start group">
+                <button
+                  onClick={() => router.push('/admin/siswa')}
+                  className="w-full text-left p-5 bg-background border border-border hover:border-primary/40 rounded-2xl transition-all flex justify-between items-start group cursor-pointer"
+                >
                   <div className="flex flex-col gap-1">
                     <span className="p-2 bg-primary/10 text-primary rounded-lg w-fit mb-2">👤</span>
                     <span className="font-extrabold text-sm text-foreground">Tambah Siswa Baru</span>
                     <span className="text-3xs text-muted-foreground font-medium">Daftarkan siswa baru ke program latihan.</span>
                   </div>
-                  <button className="p-1.5 bg-primary text-primary-foreground rounded-lg opacity-0 group-hover:opacity-100 transition-all cursor-pointer">
+                  <span className="p-1.5 bg-primary text-primary-foreground rounded-lg opacity-0 group-hover:opacity-100 transition-all">
                     <Plus className="w-4 h-4" />
-                  </button>
-                </div>
+                  </span>
+                </button>
               </PermissionGate>
 
               {/* PermissionGate: keuangan.manage */}
@@ -176,16 +179,19 @@ export default function HomePage() {
                   </div>
                 }
               >
-                <div className="p-5 bg-background border border-border hover:border-primary/40 rounded-2xl transition-all flex justify-between items-start group">
+                <button
+                  onClick={() => router.push('/admin/spp')}
+                  className="w-full text-left p-5 bg-background border border-border hover:border-primary/40 rounded-2xl transition-all flex justify-between items-start group cursor-pointer"
+                >
                   <div className="flex flex-col gap-1">
                     <span className="p-2 bg-primary/10 text-primary rounded-lg w-fit mb-2">💰</span>
                     <span className="font-extrabold text-sm text-foreground">Kelola SPP / Kas</span>
                     <span className="text-3xs text-muted-foreground font-medium">Verifikasi tagihan & buku kas masuk/keluar.</span>
                   </div>
-                  <button className="p-1.5 bg-primary text-primary-foreground rounded-lg opacity-0 group-hover:opacity-100 transition-all cursor-pointer">
+                  <span className="p-1.5 bg-primary text-primary-foreground rounded-lg opacity-0 group-hover:opacity-100 transition-all">
                     <Wallet className="w-4 h-4" />
-                  </button>
-                </div>
+                  </span>
+                </button>
               </PermissionGate>
 
               {/* PermissionGate: materi.manage */}
@@ -199,16 +205,19 @@ export default function HomePage() {
                   </div>
                 }
               >
-                <div className="p-5 bg-background border border-border hover:border-primary/40 rounded-2xl transition-all flex justify-between items-start group">
+                <button
+                  onClick={() => router.push('/admin/materi')}
+                  className="w-full text-left p-5 bg-background border border-border hover:border-primary/40 rounded-2xl transition-all flex justify-between items-start group cursor-pointer"
+                >
                   <div className="flex flex-col gap-1">
                     <span className="p-2 bg-primary/10 text-primary rounded-lg w-fit mb-2">📖</span>
                     <span className="font-extrabold text-sm text-foreground">Kurikulum Latihan</span>
                     <span className="text-3xs text-muted-foreground font-medium">Edit taktik, teknik, dan materi mingguan.</span>
                   </div>
-                  <button className="p-1.5 bg-primary text-primary-foreground rounded-lg opacity-0 group-hover:opacity-100 transition-all cursor-pointer">
+                  <span className="p-1.5 bg-primary text-primary-foreground rounded-lg opacity-0 group-hover:opacity-100 transition-all">
                     <FileText className="w-4 h-4" />
-                  </button>
-                </div>
+                  </span>
+                </button>
               </PermissionGate>
 
             </div>

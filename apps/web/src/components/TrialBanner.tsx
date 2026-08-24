@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import { usePathname } from 'next/navigation';
 import { useQuery, gql } from '@apollo/client';
 import { ShieldAlert, Zap } from 'lucide-react';
 import Link from 'next/link';
@@ -18,7 +18,11 @@ const MY_SUBSCRIPTION = gql`
 `;
 
 export default function TrialBanner() {
+  const pathname = usePathname();
   const { data, loading, error } = useQuery(MY_SUBSCRIPTION);
+
+  // Jangan tampilkan banner masa trial di area administrator
+  if (pathname?.startsWith('/admin')) return null;
 
   if (loading || error || !data?.mySubscription) return null;
 
@@ -39,7 +43,7 @@ export default function TrialBanner() {
           </span>
         </div>
         <Link
-          href="/admin/billing"
+          href="/admin/langganan"
           className="ml-4 shrink-0 px-3 py-1 bg-white text-red-600 font-extrabold rounded-lg hover:bg-slate-100 transition-colors text-[10px] uppercase tracking-wider"
         >
           Upgrade Sekarang
@@ -58,7 +62,7 @@ export default function TrialBanner() {
         </span>
       </div>
       <Link
-        href="/admin/billing"
+        href="/admin/langganan"
         className="ml-4 shrink-0 px-3 py-1 bg-yellow-400 text-slate-900 font-black rounded-lg hover:bg-yellow-300 transition-colors text-[10px] uppercase tracking-wider shadow-md"
       >
         Upgrade

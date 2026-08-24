@@ -1,0 +1,28 @@
+{
+  "name": "SaaS Sport Management — SSB Management Platform",
+  "short_name": "SSB Garuda",
+  "description": "Platform manajemen SSB/akademi sepak bola: siswa, jadwal, absensi, keuangan, evaluasi, dan turnamen.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#16a34a",
+  "lang": "id",
+  "categories": ["sports", "education", "productivity"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

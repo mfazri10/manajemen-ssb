@@ -2,11 +2,13 @@
 
 import React from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useSession, signOut } from "@/lib/auth-client";
+import { usePathname } from "next/navigation";
+import { useSession } from "@/lib/auth-client";
 import { usePermissions } from "@/features/authentication/hooks/usePermissions";
 import { useQuery, gql } from "@apollo/client";
 import { useMenuAccess } from "@/hooks/useMenuAccess";
+import { useSignOut } from "@/hooks/useSignOut";
+import { useTenant } from "@/hooks/useTenant";
 import {
   Sidebar,
   SidebarContent,
@@ -28,7 +30,6 @@ import {
   CollapsibleContent,
 } from "@/components/ui/collapsible";
 import * as LucideIcons from "lucide-react";
-import { toast } from "sonner";
 
 // GraphQL Query to fetch active menu tree
 const GET_ACTIVE_MENU_TREE = gql`
@@ -78,10 +79,11 @@ function MenuIcon({ name, className }: { name?: string | null | undefined; class
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const router = useRouter();
   const { data: session, isPending: sessionPending } = useSession();
   const { hasPermission } = usePermissions();
   const { canAccessAbsensi, canAccessKeuangan, canAccessEvaluasi } = useMenuAccess();
+  const { handleSignOut } = useSignOut();
+  const { nama: namaAkademi } = useTenant();
 
   const isMenuLocked = (slug: string) => {
     const s = slug.toLowerCase();
@@ -99,16 +101,6 @@ export function AppSidebar() {
       skip: sessionPending || !session,
     }
   );
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      toast.success("Berhasil keluar dari akun.");
-      router.push("/auth/login");
-    } catch (err) {
-      toast.error("Gagal keluar dari sesi.");
-    }
-  };
 
   const activeMenus = menuData?.activeMenuTree || [];
 
@@ -235,7 +227,7 @@ export function AppSidebar() {
                             <SidebarMenuSubItem>
                               <SidebarMenuSubButton asChild isActive={pathname === "/admin/audit-log"}>
                                 <Link href="/admin/audit-log" className="text-2xs">
-                                  Audit Log
+                                  Log Audit
                                 </Link>
                               </SidebarMenuSubButton>
                             </SidebarMenuSubItem>
@@ -358,6 +350,20 @@ export function AppSidebar() {
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                         <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild isActive={pathname === "/admin/absensi-cepat"}>
+                            <Link href="/admin/absensi-cepat" className="text-2xs">
+                              Absensi Cepat
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild isActive={pathname === "/admin/dokumen-siswa"}>
+                            <Link href="/admin/dokumen-siswa" className="text-2xs">
+                              Dokumen Siswa
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
                           <SidebarMenuSubButton asChild isActive={pathname === "/portal"}>
                             <Link href="/portal" className="text-2xs">
                               Portal Orang Tua
@@ -411,7 +417,17 @@ export function AppSidebar() {
                         </SidebarMenuSubItem>
                         <SidebarMenuSubItem>
                           <SidebarMenuSubButton asChild isActive={pathname === "/admin/payment"}>
-                            <Link href="/admin/payment" className="text-2xs">Payment</Link>
+                            <Link href="/admin/payment" className="text-2xs">Pembayaran</Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild isActive={pathname === "/admin/transaksi"}>
+                            <Link href="/admin/transaksi" className="text-2xs">Transaksi</Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild isActive={pathname === "/admin/billing"}>
+                            <Link href="/admin/billing" className="text-2xs">Billing</Link>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                       </SidebarMenuSub>
@@ -505,13 +521,18 @@ export function AppSidebar() {
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                         <SidebarMenuSubItem>
-                          <SidebarMenuSubButton asChild isActive={pathname === "/admin/inventaris"}>
-                            <Link href="/admin/inventaris" className="text-2xs">Inventaris</Link>
+                          <SidebarMenuSubButton asChild isActive={pathname === "/admin/inventaris-detail"}>
+                            <Link href="/admin/inventaris-detail" className="text-2xs">Distribusi & Mutasi</Link>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                         <SidebarMenuSubItem>
                           <SidebarMenuSubButton asChild isActive={pathname === "/admin/match"}>
-                            <Link href="/admin/match" className="text-2xs">Match & Klasemen</Link>
+                            <Link href="/admin/match" className="text-2xs">Pertandingan & Klasemen</Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild isActive={pathname === "/admin/klasemen"}>
+                            <Link href="/admin/klasemen" className="text-2xs">Klasemen Turnamen</Link>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                       </SidebarMenuSub>
@@ -583,9 +604,9 @@ export function AppSidebar() {
         <div className="w-8 h-8 bg-primary/10 border border-primary/20 flex items-center justify-center rounded-xl">
           <LucideIcons.Trophy className="w-4 h-4 text-primary" />
         </div>
-        <div className="flex flex-col text-left">
-          <span className="font-extrabold text-xs tracking-tight text-sidebar-foreground uppercase">
-            SSB Garuda
+        <div className="flex flex-col text-left min-w-0">
+          <span className="font-extrabold text-xs tracking-tight text-sidebar-foreground uppercase truncate">
+            {namaAkademi || "SSB Garuda"}
           </span>
           <span className="text-5xs text-muted-foreground font-bold uppercase tracking-wider">
             Management Platform

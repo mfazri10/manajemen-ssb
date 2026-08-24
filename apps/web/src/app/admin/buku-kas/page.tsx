@@ -4,8 +4,10 @@ import { useQuery, useMutation, gql } from '@apollo/client';
 import { Button } from '@/components/ui/button';
 import { DataTable, ColumnDef } from '@/components/ui/table/data-table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Plus, Trash2, Loader2, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, Loader2, AlertCircle, Download } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+import { exportToCsv } from '@/lib/export-csv';
 
 const GET = gql`query GetBukuKas { bukuKas { id tanggal tipe kategori jumlah keterangan } }`;
 const CREATE = gql`mutation CreateKas($tanggal:String!,$tipe:String!,$jumlah:Float!,$kategori:String,$keterangan:String) { createBukuKas(tanggal:$tanggal,tipe:$tipe,jumlah:$jumlah,kategori:$kategori,keterangan:$keterangan) { id } }`;
@@ -17,13 +19,18 @@ export default function AdminBukuKasPage() {
   const { data, loading, error, refetch } = useQuery<{ bukuKas: KasData[] }>(GET, { fetchPolicy: 'cache-and-network' });
   const [createKas] = useMutation(CREATE);
   const [deleteKas] = useMutation(DELETE);
+  const { ask, dialog } = useConfirmDialog();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const empty = { tanggal: new Date().toISOString().split('T')[0], tipe: 'masuk', kategori: '', jumlah: '', keterangan: '' };
   const [f, setF] = useState(empty);
   const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }));
 
-  const handleDelete = async (item: KasData) => { if (!confirm('Hapus?')) return; try { await deleteKas({ variables: { id: item.id } }); toast.success('Dihapus.'); refetch(); } catch (e: any) { toast.error(e?.message); } };
+  const handleDelete = (item: KasData) => ask({
+    title: 'Hapus transaksi kas?',
+    description: `Transaksi ${item.kategori || item.keterangan || item.tanggal} akan dihapus permanen.`,
+    onConfirm: async () => { try { await deleteKas({ variables: { id: item.id } }); toast.success('Dihapus.'); refetch(); } catch (e: any) { toast.error(e?.message); } },
+  });
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setSubmitting(true);
     try {
@@ -36,6 +43,7 @@ export default function AdminBukuKasPage() {
 
   const totalMasuk = (data?.bukuKas || []).filter(k => k.tipe === 'masuk').reduce((s, k) => s + Number(k.jumlah), 0);
   const totalKeluar = (data?.bukuKas || []).filter(k => k.tipe === 'keluar').reduce((s, k) => s + Number(k.jumlah), 0);
+  const kasListExport = (data?.bukuKas || []).map(k => ({ tanggal: k.tanggal, tipe: k.tipe, kategori: k.kategori || '', jumlah: k.jumlah, keterangan: k.keterangan || '' }));
 
   const columns: ColumnDef<KasData>[] = [
     { header: 'Tanggal', accessorKey: 'tanggal', className: 'text-xs' },
@@ -59,7 +67,7 @@ export default function AdminBukuKasPage() {
       </div>
       {error ? <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-md flex items-center gap-2 text-destructive text-xs"><AlertCircle className="w-4 h-4" /><span className="font-bold">{error.message}</span></div> : (
         <div className="bg-card border border-border rounded-md p-5 shadow-2xs">
-          <DataTable data={data?.bukuKas || []} columns={columns} loading={loading} searchPlaceholder="Cari..." searchKeys={['kategori', 'keterangan']} emptyMessage="Belum ada data." actions={<Button onClick={() => { setF(empty); setDialogOpen(true); }} className="bg-primary hover:bg-primary/95 text-primary-foreground font-bold rounded-md gap-1.5 h-9 px-3 text-xs cursor-pointer"><Plus className="w-3.5 h-3.5" /><span>Tambah</span></Button>} />
+          <DataTable data={data?.bukuKas || []} columns={columns} loading={loading} searchPlaceholder="Cari..." searchKeys={['kategori', 'keterangan']} emptyMessage="Belum ada data." actions={<div className="flex items-center gap-2"><Button onClick={() => exportToCsv('buku-kas', kasListExport)} variant="ghost" className="border border-border bg-background hover:bg-muted text-foreground font-bold rounded-md gap-1.5 h-9 px-3 text-xs cursor-pointer"><Download className="w-3.5 h-3.5" /><span>Export CSV</span></Button><Button onClick={() => { setF(empty); setDialogOpen(true); }} className="bg-primary hover:bg-primary/95 text-primary-foreground font-bold rounded-md gap-1.5 h-9 px-3 text-xs cursor-pointer"><Plus className="w-3.5 h-3.5" /><span>Tambah</span></Button></div>} />
         </div>
       )}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -82,6 +90,7 @@ export default function AdminBukuKasPage() {
           </form>
         </DialogContent>
       </Dialog>
+      {dialog}
     </div>
   );
 }

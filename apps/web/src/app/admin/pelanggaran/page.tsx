@@ -6,6 +6,7 @@ import { DataTable, ColumnDef } from '@/components/ui/table/data-table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Plus, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 const GET = gql`query GetPelanggaranSiswa { pelanggaranSiswa { id siswaId masterPelanggaranId tanggal keterangan } }`;
 const GET_SISWA = gql`query GetSiswaPlg { siswa { id namaLengkap } }`;
@@ -21,6 +22,7 @@ export default function AdminPelanggaranPage() {
   const { data: masterData } = useQuery<{ masterPelanggaran: { id: string; nama: string; poin?: number }[] }>(GET_MASTER);
   const [createPlg] = useMutation(CREATE);
   const [deletePlg] = useMutation(DELETE);
+  const { ask, dialog } = useConfirmDialog();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [f, setF] = useState({ siswaId: '', tanggal: new Date().toISOString().split('T')[0], masterPelanggaranId: '', keterangan: '' });
@@ -28,7 +30,11 @@ export default function AdminPelanggaranPage() {
   const siswaMap = Object.fromEntries((siswaData?.siswa || []).map(s => [s.id, s.namaLengkap]));
   const masterMap = Object.fromEntries((masterData?.masterPelanggaran || []).map(m => [m.id, m.nama]));
 
-  const handleDelete = async (i: PlgData) => { if (!confirm('Hapus?')) return; try { await deletePlg({ variables: { id: i.id } }); toast.success('Dihapus.'); refetch(); } catch (e: any) { toast.error(e?.message); } };
+  const handleDelete = (i: PlgData) => ask({
+    title: 'Hapus data pelanggaran?',
+    description: `Data pelanggaran ${siswaMap[i.siswaId] || i.siswaId} tanggal ${i.tanggal} akan dihapus permanen.`,
+    onConfirm: async () => { try { await deletePlg({ variables: { id: i.id } }); toast.success('Dihapus.'); refetch(); } catch (e: any) { toast.error(e?.message); } },
+  });
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setSubmitting(true);
     try {
@@ -75,6 +81,7 @@ export default function AdminPelanggaranPage() {
           </form>
         </DialogContent>
       </Dialog>
+      {dialog}
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { DataTable, ColumnDef } from '@/components/ui/table/data-table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Plus, Trash2, Loader2, AlertCircle, ClipboardList } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 const GET = gql`query GetLogPelatih { logPelatih { id pelatihId jadwalId tanggal kegiatan materiId catatan durasiMenit } }`;
 const GET_PELATIH = gql`query GetPelatihLog { pelatih { id nama } }`;
@@ -17,6 +18,7 @@ export default function AdminLogPelatihPage() {
   const { data: pelatihData } = useQuery<{ pelatih: { id: string; nama: string }[] }>(GET_PELATIH);
   const [create] = useMutation(CREATE);
   const [del] = useMutation(DELETE);
+  const { ask, dialog } = useConfirmDialog();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const empty = { pelatihId: '', tanggal: new Date().toISOString().split('T')[0], kegiatan: '', catatan: '', durasiMenit: '' };
@@ -24,7 +26,11 @@ export default function AdminLogPelatihPage() {
   const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }));
   const pelatihMap = Object.fromEntries((pelatihData?.pelatih || []).map(p => [p.id, p.nama]));
 
-  const handleDelete = async (i: any) => { if (!confirm('Hapus?')) return; try { await del({ variables: { id: i.id } }); toast.success('Dihapus.'); refetch(); } catch (e: any) { toast.error(e?.message); } };
+  const handleDelete = (i: any) => ask({
+    title: 'Hapus log pelatih?',
+    description: `Log kegiatan "${i.kegiatan}" tanggal ${i.tanggal} akan dihapus permanen.`,
+    onConfirm: async () => { try { await del({ variables: { id: i.id } }); toast.success('Dihapus.'); refetch(); } catch (e: any) { toast.error(e?.message); } },
+  });
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setSubmitting(true);
     try {
@@ -72,6 +78,7 @@ export default function AdminLogPelatihPage() {
           </form>
         </DialogContent>
       </Dialog>
+      {dialog}
     </div>
   );
 }

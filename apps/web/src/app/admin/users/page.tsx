@@ -8,9 +8,11 @@ import { User } from '@/features/cms/admin/user/types';
 import { Button } from '@/components/ui/button';
 import { UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 export default function AdminUsersPage() {
   const { users, loading, createUser, updateUserRoles, deleteUser } = useUser();
+  const { ask, dialog } = useConfirmDialog();
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
   const [selectedUser, setSelectedUser] = useState<User | undefined>(undefined);
@@ -27,16 +29,18 @@ export default function AdminUsersPage() {
     setFormOpen(true);
   };
 
-  const handleDelete = async (user: User) => {
-    if (confirm(`Apakah Anda yakin ingin menghapus user "${user.name}"?`)) {
+  const handleDelete = (user: User) => ask({
+    title: 'Hapus user?',
+    description: `User "${user.name}" akan dihapus permanen.`,
+    onConfirm: async () => {
       try {
         await deleteUser(user.id);
         toast.success(`User "${user.name}" berhasil dihapus.`);
       } catch (err: any) {
         toast.error(err?.message || 'Gagal menghapus user.');
       }
-    }
-  };
+    },
+  });
 
   const handleFormSubmit = async (data: any) => {
     if (formMode === 'create') {
@@ -91,7 +95,7 @@ export default function AdminUsersPage() {
         user={selectedUser}
         onSubmit={handleFormSubmit}
       />
-
+      {dialog}
     </div>
   );
 }

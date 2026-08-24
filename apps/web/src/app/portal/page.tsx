@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useQuery, gql } from '@apollo/client';
 import { Loader2, AlertCircle, User, Calendar, CheckCircle, Wallet, FileText } from 'lucide-react';
+import { PageLoader } from '@/components/page-states';
 
 const GET_PORTAL_ANAK = gql`query PortalAnak { portalAnak { id namaLengkap tanggalLahir jenisKelamin kelompokUmurNama posisiNama status fotoUrl } }`;
 const GET_PORTAL_JADWAL = gql`query PortalJadwal { portalJadwal { id hari waktu lokasi namaKelompok } }`;
@@ -37,7 +38,7 @@ export default function PortalPage() {
 
   const anak = anakData?.portalAnak?.[0];
 
-  if (anakLoading) return <div className="flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
+  if (anakLoading) return <PageLoader />;
   if (anakError) return <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-md flex items-center gap-2 text-destructive text-xs"><AlertCircle className="w-4 h-4" /><span className="font-bold">{anakError.message}</span></div>;
 
   return (

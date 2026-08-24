@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Plus, Edit2, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 const GET_MASTER_POSISI = gql`
   query GetMasterPosisi {
@@ -67,6 +68,7 @@ export default function AdminPosisiPage() {
   const [createPosisi] = useMutation(CREATE_MASTER_POSISI);
   const [updatePosisi] = useMutation(UPDATE_MASTER_POSISI);
   const [deletePosisi] = useMutation(DELETE_MASTER_POSISI);
+  const { ask, dialog } = useConfirmDialog();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
@@ -92,8 +94,10 @@ export default function AdminPosisiPage() {
     setDialogOpen(true);
   };
 
-  const handleDelete = async (item: MasterPosisi) => {
-    if (confirm(`Hapus posisi "${item.nama}" (${item.kode})?`)) {
+  const handleDelete = (item: MasterPosisi) => ask({
+    title: 'Hapus posisi?',
+    description: `Posisi "${item.nama}" (${item.kode}) akan dihapus permanen.`,
+    onConfirm: async () => {
       try {
         await deletePosisi({ variables: { id: item.id } });
         toast.success(`"${item.nama}" berhasil dihapus.`);
@@ -101,8 +105,8 @@ export default function AdminPosisiPage() {
       } catch (err: any) {
         toast.error(err?.message || 'Gagal menghapus.');
       }
-    }
-  };
+    },
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -256,6 +260,7 @@ export default function AdminPosisiPage() {
           </form>
         </DialogContent>
       </Dialog>
+      {dialog}
     </div>
   );
 }

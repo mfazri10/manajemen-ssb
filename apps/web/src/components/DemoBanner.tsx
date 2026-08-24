@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { useQuery, gql } from '@apollo/client';
 import { Eye, X } from 'lucide-react';
 
@@ -18,8 +19,12 @@ interface DemoBannerProps {
 }
 
 export default function DemoBanner({ onDismiss }: DemoBannerProps) {
+  const pathname = usePathname();
   const { data, loading, error } = useQuery(MY_ONBOARDING_PROGRESS);
   const [dismissed, setDismissed] = useState(false);
+
+  // Jangan tampilkan banner mode demo jika pengguna sedang di area administrator
+  if (pathname?.startsWith('/admin')) return null;
 
   if (loading || error || dismissed || !data?.myOnboardingProgress) return null;
 

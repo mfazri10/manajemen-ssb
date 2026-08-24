@@ -6,6 +6,7 @@ import { DataTable, ColumnDef } from '@/components/ui/table/data-table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Plus, Edit2, Trash2, Loader2, AlertCircle, Trophy, Users, Target, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 const GET_MATCH = gql`query GetMatch($turnamenId:ID) { match(turnamenId:$turnamenId) { id turnamenId babak matchNo tanggal waktu lokasi timHome timAway skorHome skorAway status catatan } }`;
 const GET_TURNAMEN = gql`query GetTurnamenM { turnamen { id nama } }`;
@@ -66,6 +67,7 @@ function MatchTab({ turnamenFilter, selectedMatch, setSelectedMatch, subTab, set
   const [deleteLineup] = useMutation(DELETE_LINEUP);
   const [createEvent] = useMutation(CREATE_EVENT);
   const [deleteEvent] = useMutation(DELETE_EVENT);
+  const { ask, dialog } = useConfirmDialog();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [lineupDialog, setLineupDialog] = useState(false);
   const [eventDialog, setEventDialog] = useState(false);
@@ -79,7 +81,11 @@ function MatchTab({ turnamenFilter, selectedMatch, setSelectedMatch, subTab, set
   const [skor, setSkor] = useState({ home: 0, away: 0 });
   const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }));
 
-  const handleDelete = async (id: string) => { if (!confirm('Hapus?')) return; try { await deleteMatch({ variables: { id } }); toast.success('Dihapus.'); refetch(); } catch (e: any) { toast.error(e?.message); } };
+  const handleDelete = (id: string) => ask({
+    title: 'Hapus match?',
+    description: 'Data pertandingan ini akan dihapus permanen.',
+    onConfirm: async () => { try { await deleteMatch({ variables: { id } }); toast.success('Dihapus.'); refetch(); } catch (e: any) { toast.error(e?.message); } },
+  });
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setSubmitting(true);
     try {
@@ -230,6 +236,7 @@ function MatchTab({ turnamenFilter, selectedMatch, setSelectedMatch, subTab, set
           </form>
         </DialogContent>
       </Dialog>
+      {dialog}
     </div>
   );
 }

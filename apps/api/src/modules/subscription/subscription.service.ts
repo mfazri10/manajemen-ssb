@@ -23,6 +23,16 @@ export class SubscriptionService {
     return ua.slug;
   }
 
+  async resolveAkademiId(slug: string): Promise<string> {
+    const [a] = await this.dbService.db
+      .select({ id: akademi.id })
+      .from(akademi)
+      .where(eq(akademi.slug, slug))
+      .limit(1);
+    if (!a) throw new BadRequestException('Akademi tidak ditemukan untuk tenant ini.');
+    return a.id;
+  }
+
   // Paket Langganan
   async findAllPaket(slug: string) {
     const t = this.getTenant(slug);

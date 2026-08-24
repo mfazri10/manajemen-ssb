@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { DrizzleService } from '../../drizzle/drizzle.service';
 import { XenditService } from './xendit.service';
+import { AffiliateService } from '../affiliate/affiliate.service';
 import { getTenantSchema } from '@workspace/db';
 import { akademi, userAkademis } from '@workspace/db';
 import { eq, and, desc } from 'drizzle-orm';
@@ -10,6 +11,7 @@ export class PaymentService {
   constructor(
     private readonly dbService: DrizzleService,
     private readonly xenditService: XenditService,
+    private readonly affiliateService: AffiliateService,
   ) {}
 
   private getTenant(slug: string) {
@@ -27,6 +29,16 @@ export class PaymentService {
     return ua.slug;
   }
 
+  async resolveAkademiId(slug: string): Promise<string> {
+    const [a] = await this.dbService.db
+      .select({ id: akademi.id })
+      .from(akademi)
+      .where(eq(akademi.slug, slug))
+      .limit(1);
+    if (!a) throw new BadRequestException('Akademi tidak ditemukan untuk tenant ini.');
+    return a.id;
+  }
+
   async findAll(slug: string, akademiId: string) {
     const t = this.getTenant(slug);
     return this.dbService.db.select().from(t.payment)
@@ -41,7 +53,7 @@ export class PaymentService {
     return result;
   }
 
-  async createPayment(slug: string, akademiId: string, langgananId: string, method: string) {
+  async createPayment(slug: string, akademiId: string, langgananId: string, method: string, affiliateRef?: string) {
     const t = this.getTenant(slug);
 
     // Ambil paket langganan untuk menghitung jumlah pembayaran
@@ -75,7 +87,8 @@ export class PaymentService {
       console.error(`[Xendit Integration Failed, fallback to manual]: ${e?.message}`);
     }
 
-    const metadataObj = { invoiceUrl, generatedAt: new Date().toISOString() };
+    const metadataObj: Record<string, unknown> = { invoiceUrl, generatedAt: new Date().toISOString() };
+    if (affiliateRef) metadataObj.affiliateRef = affiliateRef;
 
     const [result] = await this.dbService.db.insert(t.payment).values({
       akademiId,
@@ -136,7 +149,36 @@ export class PaymentService {
           }),
         })
         .where(eq(t.payment.externalId, externalId));
-      
+
+      // === AFFILIATE CONVERSION HOOK ===
+      // Cek apakah pembayaran ini membawa kode referral affiliate
+      try {
+        const kodeReferral: string | undefined = payload.metadata?.affiliateRef;
+        if (kodeReferral) {
+          // Ambil akademi_id dari external_id yang sudah diformat: slug:PAY-...
+          // Kita perlu ambil academic_id dari payment record
+          const [paymentRecord] = await this.dbService.db
+            .select()
+            .from(t.payment)
+            .where(eq(t.payment.externalId, externalId))
+            .limit(1);
+
+          if (paymentRecord) {
+            const paidAmount = Number(payload.paid_amount ?? paymentRecord.amount ?? 0);
+            await this.affiliateService.processConversion({
+              akademiId: paymentRecord.akademiId,
+              kodeReferral,
+              paymentAmount: paidAmount,
+            });
+            console.log(`[Affiliate] Konversi berhasil untuk kode referral ${kodeReferral}, akademi ${paymentRecord.akademiId}`);
+          }
+        }
+      } catch (err: any) {
+        // Jangan hentikan flow payment meski affiliate conversion gagal
+        console.error(`[Affiliate] Gagal proses konversi: ${err?.message}`);
+      }
+      // === END AFFILIATE CONVERSION HOOK ===
+
       console.log(`[Xendit Webhook Success] Transaksi lunas untuk tenant ${slug}, externalId: ${externalId}`);
     } else if (status === 'EXPIRED') {
       await this.dbService.db.update(t.payment)

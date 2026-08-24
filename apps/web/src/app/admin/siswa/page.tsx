@@ -7,8 +7,10 @@ import { DataTable, ColumnDef } from '@/components/ui/table/data-table';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
-import { Plus, Edit2, Trash2, Loader2, AlertCircle, Eye, Upload } from 'lucide-react';
+import { Plus, Edit2, Trash2, Loader2, AlertCircle, Eye, Upload, Download } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+import { exportToCsv } from '@/lib/export-csv';
 
 const GET_SISWA = gql`query GetSiswa { siswa { id namaLengkap namaPanggilan nisn nik tanggalLahir jenisKelamin status kelompokUmurId posisiId } }`;
 const GET_KELOMPOK_UMUR = gql`query GetKU { kelompokUmur { id nama } }`;
@@ -31,6 +33,7 @@ export default function AdminSiswaPage() {
   const [createSiswa] = useMutation(CREATE_SISWA);
   const [updateSiswa] = useMutation(UPDATE_SISWA);
   const [deleteSiswa] = useMutation(DELETE_SISWA);
+  const { ask, dialog } = useConfirmDialog();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
@@ -115,10 +118,39 @@ export default function AdminSiswaPage() {
     setDialogOpen(true);
   };
 
-  const handleDelete = async (s: SiswaData) => {
-    if (!confirm(`Hapus siswa "${s.namaLengkap}"?`)) return;
-    try { await deleteSiswa({ variables: { id: s.id } }); toast.success(`"${s.namaLengkap}" dihapus.`); refetch(); }
-    catch (e: any) { toast.error(e?.message || 'Gagal menghapus.'); }
+  const handleDelete = (s: SiswaData) => ask({
+    title: 'Hapus siswa?',
+    description: `Data siswa "${s.namaLengkap}" akan dihapus permanen.`,
+    onConfirm: async () => {
+      try { await deleteSiswa({ variables: { id: s.id } }); toast.success(`"${s.namaLengkap}" dihapus.`); refetch(); }
+      catch (e: any) { toast.error(e?.message || 'Gagal menghapus.'); }
+    },
+  });
+
+  const handleExport = () => {
+    const rows = (data?.siswa || []).map(s => ({
+      namaLengkap: s.namaLengkap,
+      namaPanggilan: s.namaPanggilan || '',
+      nisn: s.nisn || '',
+      nik: s.nik || '',
+      tanggalLahir: s.tanggalLahir,
+      jenisKelamin: s.jenisKelamin || '',
+      kelompok: kuMap[s.kelompokUmurId || ''] || '',
+      posisi: posMap[s.posisiId || ''] || '',
+      status: s.status,
+    }));
+    exportToCsv('data-siswa', rows, [
+      { key: 'namaLengkap', header: 'Nama Lengkap' },
+      { key: 'namaPanggilan', header: 'Nama Panggilan' },
+      { key: 'nisn', header: 'NISN' },
+      { key: 'nik', header: 'NIK' },
+      { key: 'tanggalLahir', header: 'Tanggal Lahir' },
+      { key: 'jenisKelamin', header: 'Jenis Kelamin' },
+      { key: 'kelompok', header: 'Kelompok Umur' },
+      { key: 'posisi', header: 'Posisi' },
+      { key: 'status', header: 'Status' },
+    ]);
+    toast.success('Data siswa diexport ke CSV.');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -183,6 +215,14 @@ export default function AdminSiswaPage() {
             emptyMessage="Belum ada siswa."
             actions={
               <div className="flex items-center gap-2">
+                <Button
+                  onClick={handleExport}
+                  variant="ghost"
+                  className="border border-border bg-background hover:bg-muted text-foreground font-bold rounded-md gap-1.5 h-9 px-3 text-xs cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Export CSV</span>
+                </Button>
                 <Button
                   onClick={() => setImportDialogOpen(true)}
                   variant="outline"
@@ -333,6 +373,7 @@ export default function AdminSiswaPage() {
           </form>
         </DialogContent>
       </Dialog>
+      {dialog}
     </div>
   );
 }

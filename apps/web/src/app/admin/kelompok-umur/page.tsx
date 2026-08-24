@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Plus, Edit2, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 const GET_KELOMPOK_UMUR = gql`
   query GetKelompokUmur {
@@ -71,6 +72,7 @@ export default function AdminKelompokUmurPage() {
   const [createKelompokUmur] = useMutation(CREATE_KELOMPOK_UMUR);
   const [updateKelompokUmur] = useMutation(UPDATE_KELOMPOK_UMUR);
   const [deleteKelompokUmur] = useMutation(DELETE_KELOMPOK_UMUR);
+  const { ask, dialog } = useConfirmDialog();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
@@ -99,8 +101,10 @@ export default function AdminKelompokUmurPage() {
     setDialogOpen(true);
   };
 
-  const handleDelete = async (item: KelompokUmur) => {
-    if (confirm(`Hapus kelompok umur "${item.nama}"?`)) {
+  const handleDelete = (item: KelompokUmur) => ask({
+    title: 'Hapus kelompok umur?',
+    description: `Kelompok umur "${item.nama}" akan dihapus permanen.`,
+    onConfirm: async () => {
       try {
         await deleteKelompokUmur({ variables: { id: item.id } });
         toast.success(`"${item.nama}" berhasil dihapus.`);
@@ -108,8 +112,8 @@ export default function AdminKelompokUmurPage() {
       } catch (err: any) {
         toast.error(err?.message || 'Gagal menghapus.');
       }
-    }
-  };
+    },
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -294,6 +298,7 @@ export default function AdminKelompokUmurPage() {
           </form>
         </DialogContent>
       </Dialog>
+      {dialog}
     </div>
   );
 }

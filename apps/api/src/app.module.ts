@@ -37,6 +37,8 @@ import { AuditLogModule } from './modules/audit-log/audit-log.module';
 import { GorModule } from './modules/gor/gor.module';
 import { LapanganModule } from './modules/lapangan/lapangan.module';
 import { OnboardingModule } from './modules/onboarding/onboarding.module';
+import { AffiliateModule } from './modules/affiliate/affiliate.module';
+import { DokumenSiswaModule } from './modules/dokumen-siswa/dokumen-siswa.module';
 import { GraphQLExceptionFilter } from './common/filters/graphql-exception.filter';
 import { AppResolver } from './app.resolver';
 
@@ -83,6 +85,8 @@ import { AppResolver } from './app.resolver';
     GorModule,
     LapanganModule,
     OnboardingModule,
+    AffiliateModule,
+    DokumenSiswaModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: GqlThrottlerGuard },

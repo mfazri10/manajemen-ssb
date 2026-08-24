@@ -28,10 +28,12 @@ export class SubscriptionResolver {
   @RequirePermissions('subscription.index')
   async getLanggananAkademi(
     @CurrentUser() userId: string,
-    @Args('akademiId') akademiId: string,
+    @Args('akademiId', { nullable: true }) akademiId?: string,
   ) {
     const slug = await this.service.resolveTenantSlug(userId);
-    return this.service.findLanggananByAkademi(slug, akademiId);
+    // Jika klien tidak mengirim akademiId, ambil dari tenant aktif
+    const resolvedAkademiId = akademiId || (await this.service.resolveAkademiId(slug));
+    return this.service.findLanggananByAkademi(slug, resolvedAkademiId);
   }
 
   @Mutation(() => PaketLangganan, { name: 'createPaketLangganan' })
@@ -79,11 +81,13 @@ export class SubscriptionResolver {
   @RequirePermissions('subscription.create')
   async subscribePaket(
     @CurrentUser() userId: string,
-    @Args('akademiId') akademiId: string,
     @Args('paketId', { type: () => ID }) paketId: string,
+    @Args('akademiId', { nullable: true }) akademiId?: string,
   ) {
     const slug = await this.service.resolveTenantSlug(userId);
-    return this.service.subscribePaket(slug, akademiId, paketId);
+    // akademiId opsional — default ke tenant aktif
+    const resolvedAkademiId = akademiId || (await this.service.resolveAkademiId(slug));
+    return this.service.subscribePaket(slug, resolvedAkademiId, paketId);
   }
 
   @Mutation(() => LanggananAkademi, { name: 'cancelLangganan' })

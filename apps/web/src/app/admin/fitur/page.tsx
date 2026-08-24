@@ -19,6 +19,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 const GET_PERMISSIONS = gql`
   query GetPermissions {
@@ -78,6 +79,7 @@ export default function AdminFiturPage() {
   const [createFeature] = useMutation(CREATE_FEATURE);
   const [updateFeature] = useMutation(UPDATE_FEATURE);
   const [deleteFeature] = useMutation(DELETE_FEATURE);
+  const { ask, dialog } = useConfirmDialog();
 
   // States
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -158,12 +160,10 @@ export default function AdminFiturPage() {
     setDialogOpen(true);
   };
 
-  const handleDelete = async (feature: Feature) => {
-    if (
-      confirm(
-        `Apakah Anda yakin ingin menghapus fitur "${feature.name}"? Semua permission terkait akan dihapus.`,
-      )
-    ) {
+  const handleDelete = (feature: Feature) => ask({
+    title: 'Hapus fitur?',
+    description: `Fitur "${feature.name}" dan semua permission terkait akan dihapus permanen.`,
+    onConfirm: async () => {
       try {
         await deleteFeature({ variables: { id: feature.id } });
         toast.success(`Fitur "${feature.name}" berhasil dihapus.`);
@@ -171,8 +171,8 @@ export default function AdminFiturPage() {
       } catch (err: any) {
         toast.error(err?.message || "Gagal menghapus fitur.");
       }
-    }
-  };
+    },
+  });
 
   const toggleFunc = (val: string) => {
     setSelectedFuncs((prev) =>
@@ -406,6 +406,7 @@ export default function AdminFiturPage() {
           </form>
         </DialogContent>
       </Dialog>
+      {dialog}
     </div>
   );
 }

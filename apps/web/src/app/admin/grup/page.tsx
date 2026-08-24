@@ -19,6 +19,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 const GET_ROLES = gql`
   query GetRoles {
@@ -72,6 +73,7 @@ export default function AdminGrupPage() {
   const [createRole] = useMutation(CREATE_ROLE);
   const [updateRole] = useMutation(UPDATE_ROLE);
   const [deleteRole] = useMutation(DELETE_ROLE);
+  const { ask, dialog } = useConfirmDialog();
 
   // States
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -98,12 +100,10 @@ export default function AdminGrupPage() {
     setDialogOpen(true);
   };
 
-  const handleDelete = async (role: GQLRole) => {
-    if (
-      confirm(
-        `Apakah Anda yakin ingin menghapus grup/role "${role.label || role.name}"?`,
-      )
-    ) {
+  const handleDelete = (role: GQLRole) => ask({
+    title: 'Hapus grup/role?',
+    description: `Grup/role "${role.label || role.name}" akan dihapus permanen.`,
+    onConfirm: async () => {
       try {
         await deleteRole({ variables: { id: role.id } });
         toast.success(`Grup "${role.label || role.name}" berhasil dihapus.`);
@@ -111,8 +111,8 @@ export default function AdminGrupPage() {
       } catch (err: any) {
         toast.error(err?.message || "Gagal menghapus grup.");
       }
-    }
-  };
+    },
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -293,6 +293,7 @@ export default function AdminGrupPage() {
           </form>
         </DialogContent>
       </Dialog>
+      {dialog}
     </div>
   );
 }

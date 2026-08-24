@@ -7,6 +7,7 @@ import { DataTable, ColumnDef } from '@/components/ui/table/data-table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Plus, Edit2, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 const GET_PELATIH = gql`query GetPelatih { pelatih { id namaLengkap noHp email tanggalLahir status } }`;
 const CREATE_PELATIH = gql`mutation CreatePelatih($namaLengkap:String!,$noHp:String,$email:String,$tempatLahir:String,$tanggalLahir:String,$status:String,$catatan:String) { createPelatih(namaLengkap:$namaLengkap,noHp:$noHp,email:$email,tempatLahir:$tempatLahir,tanggalLahir:$tanggalLahir,status:$status,catatan:$catatan) { id namaLengkap } }`;
@@ -20,6 +21,7 @@ export default function AdminPelatihPage() {
   const [createPelatih] = useMutation(CREATE_PELATIH);
   const [updatePelatih] = useMutation(UPDATE_PELATIH);
   const [deletePelatih] = useMutation(DELETE_PELATIH);
+  const { ask, dialog } = useConfirmDialog();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
@@ -31,7 +33,11 @@ export default function AdminPelatihPage() {
 
   const handleOpenCreate = () => { setFormMode('create'); setSelected(null); setF(empty); setDialogOpen(true); };
   const handleOpenEdit = (p: PelatihData) => { setFormMode('edit'); setSelected(p); setF({ namaLengkap: p.namaLengkap, noHp: p.noHp || '', email: p.email || '', tempatLahir: '', tanggalLahir: p.tanggalLahir || '', status: p.status, catatan: '' }); setDialogOpen(true); };
-  const handleDelete = async (p: PelatihData) => { if (!confirm(`Hapus pelatih "${p.namaLengkap}"?`)) return; try { await deletePelatih({ variables: { id: p.id } }); toast.success('Dihapus.'); refetch(); } catch (e: any) { toast.error(e?.message); } };
+  const handleDelete = (p: PelatihData) => ask({
+    title: 'Hapus pelatih?',
+    description: `Pelatih "${p.namaLengkap}" akan dihapus permanen.`,
+    onConfirm: async () => { try { await deletePelatih({ variables: { id: p.id } }); toast.success('Dihapus.'); refetch(); } catch (e: any) { toast.error(e?.message); } },
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setSubmitting(true);
@@ -88,6 +94,7 @@ export default function AdminPelatihPage() {
           </form>
         </DialogContent>
       </Dialog>
+      {dialog}
     </div>
   );
 }

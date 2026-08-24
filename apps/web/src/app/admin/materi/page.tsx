@@ -6,6 +6,7 @@ import { DataTable, ColumnDef } from '@/components/ui/table/data-table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Plus, Edit2, Trash2, Loader2, AlertCircle, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 const GET_KAT = gql`query GetMateriKat { materiKategori { id nama urutan } }`;
 const GET_MATERI = gql`query GetMateri { materiLatihan { id kategoriId kelompokUmurId judul deskripsi durasiMenit level tipe instruksi } }`;
@@ -29,6 +30,7 @@ export default function AdminMateriPage() {
   const [del] = useMutation(DELETE_MATERI);
   const [createKat] = useMutation(CREATE_KAT);
   const [deleteKat] = useMutation(DELETE_KAT);
+  const { ask, dialog } = useConfirmDialog();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [katDialogOpen, setKatDialogOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
@@ -43,7 +45,11 @@ export default function AdminMateriPage() {
 
   const handleOpenCreate = () => { setFormMode('create'); setSelected(null); setF(empty); setDialogOpen(true); };
   const handleOpenEdit = (i: any) => { setFormMode('edit'); setSelected(i); setF({ judul: i.judul, kategoriId: i.kategoriId || '', kelompokUmurId: i.kelompokUmurId || '', deskripsi: i.deskripsi || '', durasiMenit: i.durasiMenit?.toString() || '', level: i.level, tipe: i.tipe, instruksi: i.instruksi || '' }); setDialogOpen(true); };
-  const handleDelete = async (i: any) => { if (!confirm('Hapus?')) return; try { await del({ variables: { id: i.id } }); toast.success('Dihapus.'); refetch(); } catch (e: any) { toast.error(e?.message); } };
+  const handleDelete = (i: any) => ask({
+    title: 'Hapus materi?',
+    description: `Materi "${i.judul}" akan dihapus permanen.`,
+    onConfirm: async () => { try { await del({ variables: { id: i.id } }); toast.success('Dihapus.'); refetch(); } catch (e: any) { toast.error(e?.message); } },
+  });
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setSubmitting(true);
     try {
@@ -131,6 +137,7 @@ export default function AdminMateriPage() {
           </div>
         </DialogContent>
       </Dialog>
+      {dialog}
     </div>
   );
 }

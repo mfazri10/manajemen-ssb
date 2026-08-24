@@ -6,6 +6,7 @@ import { DataTable, ColumnDef } from '@/components/ui/table/data-table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Plus, Edit2, Trash2, Loader2, AlertCircle, Package } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 const GET = gql`query GetInventaris { inventaris { id nama kategori jumlah satuan kondisi keterangan } }`;
 const CREATE = gql`mutation CreateInv($nama:String!,$kategori:String,$jumlah:Int,$satuan:String,$kondisi:String,$keterangan:String) { createInventaris(nama:$nama,kategori:$kategori,jumlah:$jumlah,satuan:$satuan,kondisi:$kondisi,keterangan:$keterangan) { id } }`;
@@ -23,6 +24,7 @@ export default function AdminInventarisPage() {
   const [create] = useMutation(CREATE);
   const [update] = useMutation(UPDATE);
   const [del] = useMutation(DELETE);
+  const { ask, dialog } = useConfirmDialog();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
   const [selected, setSelected] = useState<Data | null>(null);
@@ -33,7 +35,11 @@ export default function AdminInventarisPage() {
 
   const handleOpenCreate = () => { setFormMode('create'); setSelected(null); setF(empty); setDialogOpen(true); };
   const handleOpenEdit = (i: Data) => { setFormMode('edit'); setSelected(i); setF({ nama: i.nama, kategori: i.kategori || '', jumlah: i.jumlah.toString(), satuan: i.satuan, kondisi: i.kondisi, keterangan: i.keterangan || '' }); setDialogOpen(true); };
-  const handleDelete = async (i: Data) => { if (!confirm('Hapus?')) return; try { await del({ variables: { id: i.id } }); toast.success('Dihapus.'); refetch(); } catch (e: any) { toast.error(e?.message); } };
+  const handleDelete = (i: Data) => ask({
+    title: 'Hapus inventaris?',
+    description: `Barang "${i.nama}" akan dihapus permanen.`,
+    onConfirm: async () => { try { await del({ variables: { id: i.id } }); toast.success('Dihapus.'); refetch(); } catch (e: any) { toast.error(e?.message); } },
+  });
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setSubmitting(true);
     try {
@@ -95,6 +101,7 @@ export default function AdminInventarisPage() {
           </form>
         </DialogContent>
       </Dialog>
+      {dialog}
     </div>
   );
 }

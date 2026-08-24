@@ -1,16 +1,18 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { useSession, signOut } from '@/lib/auth-client';
+import { useSession } from '@/lib/auth-client';
+import { useTheme } from 'next-themes';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
-import { LogOut, Loader2, User } from 'lucide-react';
-import { toast } from 'sonner';
+import { LogOut, Loader2, User, Sun, Moon } from 'lucide-react';
 import { useQuery, gql } from '@apollo/client';
 import DemoBanner from '@/components/DemoBanner';
 import TrialBanner from '@/components/TrialBanner';
 import OnboardingChecklist from '@/components/OnboardingChecklist';
+import AkademiSelector from '@/components/AkademiSelector';
+import { useSignOut } from '@/hooks/useSignOut';
 
 const GET_MY_AKADEMIS = gql`
   query GetMyAkademis {
@@ -26,6 +28,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
   const router = useRouter();
   const { data: session, isPending } = useSession();
+  const { handleSignOut } = useSignOut();
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const isAuthPage =
     pathname?.startsWith('/auth/login') ||
@@ -40,23 +46,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   });
 
   useEffect(() => {
-    if (!isAuthPage && !isPending && session?.user && !akademiLoading && akademiData) {
+    if (!isAuthPage && !pathname?.startsWith('/admin') && !isPending && session?.user && !akademiLoading && akademiData) {
       if (akademiData.myAkademis.length === 0) {
         router.push('/onboarding/survey');
       }
     }
-  }, [akademiData, akademiLoading, isAuthPage, isPending, session, router]);
+  }, [akademiData, akademiLoading, isAuthPage, pathname, isPending, session, router]);
 
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      toast.success('Berhasil keluar dari akun.');
-      router.push('/auth/login');
-    } catch (err) {
-      toast.error('Gagal keluar dari sesi.');
-    }
-  };
 
   if (isAuthPage) {
     return <>{children}</>;
@@ -64,13 +60,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   // Menentukan nama halaman berdasarkan path
   const getPageTitle = () => {
-    if (pathname === '/') return 'Dashboard Hub';
+    if (pathname === '/') return 'Beranda';
     if (pathname === '/admin/users') return 'Kelola Anggota';
     if (pathname === '/admin/roles') return 'Matriks Otorisasi (RBAC)';
     if (pathname === '/admin/siswa') return 'Kelola Siswa';
     if (pathname === '/admin/jadwal') return 'Jadwal Latihan';
     if (pathname === '/admin/absensi') return 'Absensi Latihan';
-    if (pathname === '/admin/transaksi') return 'Keuangan & SPP';
+    if (pathname === '/admin/transaksi') return 'Transaksi';
     if (pathname === '/admin/kelompok-umur') return 'Kelompok Umur';
     if (pathname === '/admin/posisi') return 'Master Posisi';
     if (pathname === '/admin/pelanggaran') return 'Master Pelanggaran';
@@ -85,7 +81,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     if (pathname === '/admin/turnamen') return 'Turnamen';
     if (pathname === '/admin/inventaris') return 'Inventaris';
     if (pathname === '/admin/dashboard') return 'Dashboard';
-    if (pathname === '/admin/match') return 'Match & Klasemen';
+    if (pathname === '/admin/match') return 'Pertandingan & Klasemen';
     if (pathname === '/admin/notifikasi') return 'Notifikasi';
     if (pathname === '/admin/materi') return 'Materi Latihan';
     if (pathname === '/admin/seleksi') return 'Seleksi Pemain';
@@ -93,8 +89,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     if (pathname === '/admin/pendaftaran') return 'Pendaftaran Online';
     if (pathname === '/portal') return 'Portal Orang Tua';
     if (pathname === '/admin/langganan') return 'Langganan';
-    if (pathname === '/admin/audit-log') return 'Audit Log';
-    if (pathname === '/admin/payment') return 'Payment';
+    if (pathname === '/admin/audit-log') return 'Log Audit';
+    if (pathname === '/admin/payment') return 'Pembayaran';
+    if (pathname === '/admin/billing') return 'Billing & Langganan';
+    if (pathname === '/admin/klasemen') return 'Klasemen Turnamen';
+    if (pathname === '/admin/absensi-cepat') return 'Absensi Cepat';
+    if (pathname === '/admin/dokumen-siswa') return 'Dokumen Siswa';
+    if (pathname === '/admin/inventaris-detail') return 'Distribusi & Mutasi Inventaris';
     return 'Manajemen';
   };
 
@@ -124,8 +125,27 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               </div>
             </div>
 
-            {/* Profile & Logout Capsule on Top-bar */}
+            {/* Tenant Switcher, Theme Toggle, Profile & Logout Capsule on Top-bar */}
             <div className="flex items-center gap-3">
+              {!isPending && session?.user && (
+                <>
+                  {/* Pemilih akademi aktif (multi-tenant) — persist ke localStorage */}
+                  <div className="hidden md:block">
+                    <AkademiSelector />
+                  </div>
+
+                  {/* Toggle tema terang/gelap (next-themes) */}
+                  {mounted && (
+                    <button
+                      onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+                      className="p-2 bg-background border border-border hover:bg-muted text-foreground/80 hover:text-foreground rounded-xl transition-all cursor-pointer"
+                      title={resolvedTheme === 'dark' ? 'Ganti ke mode terang' : 'Ganti ke mode gelap'}
+                    >
+                      {resolvedTheme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                    </button>
+                  )}
+                </>
+              )}
               {isPending ? (
                 <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
               ) : (

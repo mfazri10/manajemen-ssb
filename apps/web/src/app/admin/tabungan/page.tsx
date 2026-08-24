@@ -6,6 +6,7 @@ import { DataTable, ColumnDef } from '@/components/ui/table/data-table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Plus, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 const GET = gql`query GetTabungan { tabungan { id siswaId tanggal tipe jumlah keterangan } }`;
 const GET_SISWA = gql`query GetSiswaTab { siswa { id namaLengkap } }`;
@@ -19,13 +20,18 @@ export default function AdminTabunganPage() {
   const { data: siswaData } = useQuery<{ siswa: { id: string; namaLengkap: string }[] }>(GET_SISWA);
   const [createTab] = useMutation(CREATE);
   const [deleteTab] = useMutation(DELETE);
+  const { ask, dialog } = useConfirmDialog();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [f, setF] = useState({ siswaId: '', tanggal: new Date().toISOString().split('T')[0], tipe: 'simpan', jumlah: '', keterangan: '' });
   const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }));
   const siswaMap = Object.fromEntries((siswaData?.siswa || []).map(s => [s.id, s.namaLengkap]));
 
-  const handleDelete = async (i: TabData) => { if (!confirm('Hapus?')) return; try { await deleteTab({ variables: { id: i.id } }); toast.success('Dihapus.'); refetch(); } catch (e: any) { toast.error(e?.message); } };
+  const handleDelete = (i: TabData) => ask({
+    title: 'Hapus data tabungan?',
+    description: `Data tabungan ${siswaMap[i.siswaId] || i.siswaId} tanggal ${i.tanggal} akan dihapus permanen.`,
+    onConfirm: async () => { try { await deleteTab({ variables: { id: i.id } }); toast.success('Dihapus.'); refetch(); } catch (e: any) { toast.error(e?.message); } },
+  });
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setSubmitting(true);
     try { await createTab({ variables: { ...f, jumlah: parseFloat(f.jumlah), keterangan: f.keterangan || undefined } }); toast.success('Ditambahkan.'); setDialogOpen(false); refetch(); } catch (e: any) { toast.error(e?.message); } finally { setSubmitting(false); }
@@ -69,6 +75,7 @@ export default function AdminTabunganPage() {
           </form>
         </DialogContent>
       </Dialog>
+      {dialog}
     </div>
   );
 }

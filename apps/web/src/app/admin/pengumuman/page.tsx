@@ -6,6 +6,7 @@ import { DataTable, ColumnDef } from '@/components/ui/table/data-table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Plus, Edit2, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 const GET = gql`query GetPengumuman { pengumuman { id judul isi target kelompokUmurId tanggal } }`;
 const CREATE = gql`mutation CreatePengumuman($judul:String!,$isi:String!,$target:String,$kelompokUmurId:ID,$tanggal:String) { createPengumuman(judul:$judul,isi:$isi,target:$target,kelompokUmurId:$kelompokUmurId,tanggal:$tanggal) { id } }`;
@@ -19,6 +20,7 @@ export default function AdminPengumumanPage() {
   const [create] = useMutation(CREATE);
   const [update] = useMutation(UPDATE);
   const [del] = useMutation(DELETE);
+  const { ask, dialog } = useConfirmDialog();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
   const [selected, setSelected] = useState<Data | null>(null);
@@ -29,7 +31,11 @@ export default function AdminPengumumanPage() {
 
   const handleOpenCreate = () => { setFormMode('create'); setSelected(null); setF(empty); setDialogOpen(true); };
   const handleOpenEdit = (i: Data) => { setFormMode('edit'); setSelected(i); setF({ judul: i.judul, isi: i.isi, target: i.target, tanggal: i.tanggal || '' }); setDialogOpen(true); };
-  const handleDelete = async (i: Data) => { if (!confirm('Hapus?')) return; try { await del({ variables: { id: i.id } }); toast.success('Dihapus.'); refetch(); } catch (e: any) { toast.error(e?.message); } };
+  const handleDelete = (i: Data) => ask({
+    title: 'Hapus pengumuman?',
+    description: `Pengumuman "${i.judul}" akan dihapus permanen.`,
+    onConfirm: async () => { try { await del({ variables: { id: i.id } }); toast.success('Dihapus.'); refetch(); } catch (e: any) { toast.error(e?.message); } },
+  });
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setSubmitting(true);
     try {
@@ -85,6 +91,7 @@ export default function AdminPengumumanPage() {
           </form>
         </DialogContent>
       </Dialog>
+      {dialog}
     </div>
   );
 }

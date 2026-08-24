@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery, gql } from '@apollo/client';
+import { usePathname } from 'next/navigation';
 
 const MY_ONBOARDING_PROGRESS = gql`
   query MyOnboardingProgress {
@@ -12,14 +13,16 @@ const MY_ONBOARDING_PROGRESS = gql`
 `;
 
 export function useMenuAccess() {
+  const pathname = usePathname();
   const { data, loading } = useQuery(MY_ONBOARDING_PROGRESS);
 
-  if (loading || !data?.myOnboardingProgress) {
+  // Administrator selalu mendapatkan akses penuh ke seluruh menu tanpa terkunci oleh onboarding/survey
+  if (pathname?.startsWith('/admin') || loading || !data?.myOnboardingProgress) {
     return {
-      canAccessAbsensi: true, // fallback to avoid rendering locks on load
+      canAccessAbsensi: true,
       canAccessKeuangan: true,
       canAccessEvaluasi: true,
-      loading,
+      loading: false,
     };
   }
 

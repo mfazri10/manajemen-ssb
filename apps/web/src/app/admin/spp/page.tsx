@@ -4,8 +4,9 @@ import { useQuery, useMutation, gql } from '@apollo/client';
 import { Button } from '@/components/ui/button';
 import { DataTable, ColumnDef } from '@/components/ui/table/data-table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Plus, Edit2, Trash2, Loader2, AlertCircle, CreditCard, Zap } from 'lucide-react';
+import { Plus, Edit2, Trash2, Loader2, AlertCircle, CreditCard, Zap, BellRing } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 const GET_TAGIHAN = gql`query GetTagihan { sppTagihan { id siswaId bulan tahun jumlah status jatuhTempo } }`;
 const GET_SISWA = gql`query GetSiswaSpp { siswa { id namaLengkap } }`;
@@ -34,18 +35,24 @@ export default function AdminSppPage() {
   const [createBayar] = useMutation(CREATE_PEMBAYARAN);
   const [deleteBayar] = useMutation(DELETE_PEMBAYARAN);
   const [generateSpp, { loading: generating }] = useMutation(GENERATE_SPP_OTOMATIS);
+  const { ask, dialog } = useConfirmDialog();
 
-  const handleGenerateOtomatis = async () => {
-    if (!confirm("Hasilkan tagihan SPP otomatis untuk semua siswa aktif bulan ini?")) return;
-    try {
-      const { data } = await generateSpp();
-      const count = data?.generateSppTagihanOtomatis || 0;
-      toast.success(`Berhasil menghasilkan ${count} tagihan SPP untuk bulan ini.`);
-      refetch();
-    } catch (e: any) {
-      toast.error(e?.message || "Gagal menghasilkan tagihan otomatis.");
-    }
-  };
+  const handleGenerateOtomatis = () => ask({
+    title: 'Generate tagihan otomatis?',
+    description: 'Tagihan SPP akan dihasilkan untuk semua siswa aktif bulan ini.',
+    destructive: false,
+    confirmLabel: 'Ya, generate',
+    onConfirm: async () => {
+      try {
+        const { data } = await generateSpp();
+        const count = data?.generateSppTagihanOtomatis || 0;
+        toast.success(`Berhasil menghasilkan ${count} tagihan SPP untuk bulan ini.`);
+        refetch();
+      } catch (e: any) {
+        toast.error(e?.message || 'Gagal menghasilkan tagihan otomatis.');
+      }
+    },
+  });
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [bayarDialogOpen, setBayarDialogOpen] = useState(false);
@@ -79,7 +86,18 @@ export default function AdminSppPage() {
   const handleOpenCreate = () => { setFormMode('create'); setSelected(null); setF(empty); setDialogOpen(true); };
   const handleOpenEdit = (t: Tagihan) => { setFormMode('edit'); setSelected(t); setF({ siswaId: t.siswaId, bulan: t.bulan.toString(), tahun: t.tahun.toString(), jumlah: t.jumlah.toString(), jatuhTempo: t.jatuhTempo || '', status: t.status }); setDialogOpen(true); };
   const handleOpenBayar = (t: Tagihan) => { setSelected(t); setFb(emptyBayar); setBayarDialogOpen(true); };
-  const handleDelete = async (t: Tagihan) => { if (!confirm('Hapus tagihan?')) return; try { await deleteTagihan({ variables: { id: t.id } }); toast.success('Dihapus.'); refetch(); } catch (e: any) { toast.error(e?.message); } };
+  const handleDelete = (t: Tagihan) => ask({
+    title: 'Hapus tagihan?',
+    description: `Tagihan ${BULAN[t.bulan]} ${t.tahun} milik ${siswaMap[t.siswaId] || 'siswa'} akan dihapus permanen.`,
+    onConfirm: async () => {
+      try { await deleteTagihan({ variables: { id: t.id } }); toast.success('Dihapus.'); refetch(); } catch (e: any) { toast.error(e?.message); }
+    },
+  });
+
+  // Tunggakan: tagihan belum lunas yang sudah lewat jatuh tempo
+  const now = new Date().toISOString().split('T')[0] ?? '';
+  const tunggakan = (data?.sppTagihan || []).filter(t => t.status === 'belum' && t.jatuhTempo && t.jatuhTempo < now);
+  const totalTunggakan = tunggakan.reduce((sum, t) => sum + Number(t.jumlah), 0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setSubmitting(true);
@@ -136,6 +154,20 @@ export default function AdminSppPage() {
         <h2 className="text-2xl font-black text-foreground tracking-tight flex items-center gap-2">SPP & Tagihan <span className="text-3xs px-2.5 py-0.5 bg-primary/10 border border-primary/20 text-primary rounded-full font-black uppercase">Keuangan</span></h2>
         <p className="text-xs text-muted-foreground font-medium">Kelola tagihan SPP bulanan dan pembayaran siswa.</p>
       </div>
+
+      {/* Alert tunggakan: tagihan belum lunas yang lewat jatuh tempo */}
+      {tunggakan.length > 0 && (
+        <div className="p-4 bg-destructive/10 border border-destructive/30 rounded-xl flex items-center gap-3">
+          <span className="p-2 bg-destructive/15 border border-destructive/25 rounded-lg shrink-0"><BellRing className="w-4 h-4 text-destructive" /></span>
+          <div className="flex-1">
+            <p className="text-2xs font-black text-destructive uppercase tracking-wide">Ada {tunggakan.length} tunggakan SPP</p>
+            <p className="text-3xs text-destructive/80 font-semibold mt-0.5">
+              Total Rp {totalTunggakan.toLocaleString('id')} sudah lewat jatuh tempo. Segera tindak lanjuti ke orang tua siswa.
+            </p>
+          </div>
+        </div>
+      )}
+
       {error ? <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-md flex items-center gap-2 text-destructive text-xs"><AlertCircle className="w-4 h-4" /><span className="font-bold">{error.message}</span></div> : (
         <div className="bg-card border border-border rounded-md p-5 shadow-2xs">
           <DataTable
@@ -210,6 +242,7 @@ export default function AdminSppPage() {
           </form>
         </DialogContent>
       </Dialog>
+      {dialog}
     </div>
   );
 }

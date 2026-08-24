@@ -14,12 +14,18 @@ const MY_ONBOARDING_PROGRESS = gql`
   }
 `;
 
+import { usePathname } from 'next/navigation';
+
 export default function OnboardingChecklist() {
+  const pathname = usePathname();
   const { data, loading, error } = useQuery(MY_ONBOARDING_PROGRESS, {
     pollInterval: 10000, // refresh setiap 10 detik untuk auto-complete
   });
 
   const [isOpen, setIsOpen] = useState(true);
+
+  // Jangan tampilkan onboarding checklist jika pengguna sedang di area administrator
+  if (pathname?.startsWith('/admin')) return null;
 
   if (loading || error || !data?.myOnboardingProgress) return null;
 

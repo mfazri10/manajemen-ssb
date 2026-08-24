@@ -16,10 +16,12 @@ export class PaymentResolver {
   @RequirePermissions('payment.index')
   async getPayments(
     @CurrentUser() userId: string,
-    @Args('akademiId') akademiId: string,
+    @Args('akademiId', { nullable: true }) akademiId?: string,
   ) {
     const slug = await this.service.resolveTenantSlug(userId);
-    return this.service.findAll(slug, akademiId);
+    // Jika klien tidak mengirim akademiId, ambil dari tenant aktif (schema publik)
+    const resolvedAkademiId = akademiId || (await this.service.resolveAkademiId(slug));
+    return this.service.findAll(slug, resolvedAkademiId);
   }
 
   @Query(() => Payment, { name: 'paymentById' })
@@ -38,11 +40,12 @@ export class PaymentResolver {
     @CurrentUser() userId: string,
     @Args('langgananId', { type: () => ID }) langgananId: string,
     @Args('method') method: string,
+    @Args('affiliateRef', { nullable: true }) affiliateRef?: string,
   ) {
     const slug = await this.service.resolveTenantSlug(userId);
-    // Resolve akademiId from user
-    const akademiId = ''; // Will be resolved from tenant context
-    return this.service.createPayment(slug, akademiId, langgananId, method);
+    // Resolve akademiId dari tenant aktif agar record payment terhubung ke akademi yang benar
+    const akademiId = await this.service.resolveAkademiId(slug);
+    return this.service.createPayment(slug, akademiId, langgananId, method, affiliateRef);
   }
 
   @Mutation(() => Payment, { name: 'checkPaymentStatus' })

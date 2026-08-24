@@ -1,7 +1,7 @@
 import { Resolver, Query, Mutation, Args, ID, Float, Int } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { Fase34Service } from './fase-3-4.service';
-import { Pengumuman, Turnamen, TurnamenPeserta, Inventaris } from './entities/fase-3-4.entity';
+import { Pengumuman, Turnamen, TurnamenPeserta, Inventaris, InventarisDistribusi, InventarisMutasi } from './entities/fase-3-4.entity';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { RequirePermissions } from '../../common/decorators/permissions.decorator';
@@ -135,5 +135,85 @@ export class Fase34Resolver {
   async deleteInventaris(@CurrentUser() userId: string, @Args('id', { type: () => ID }) id: string) {
     const slug = await this.service.resolveTenantSlug(userId);
     return this.service.deleteInventaris(slug, id);
+  }
+
+  // ========== INVENTARIS DISTRIBUSI ==========
+  @Query(() => [InventarisDistribusi], { name: 'inventarisDistribusi' })
+  @RequirePermissions('inventaris.index')
+  async getDistribusi(@CurrentUser() userId: string) {
+    const slug = await this.service.resolveTenantSlug(userId);
+    return this.service.findAllDistribusi(slug);
+  }
+
+  @Mutation(() => InventarisDistribusi, { name: 'createInventarisDistribusi' })
+  @RequirePermissions('inventaris.create')
+  async createDistribusi(
+    @CurrentUser() userId: string,
+    @Args('inventarisId', { type: () => ID }) inventarisId: string,
+    @Args('siswaId', { type: () => ID, nullable: true }) siswaId?: string,
+    @Args('jumlah', { type: () => Int, nullable: true }) jumlah?: number,
+    @Args('tanggal', { nullable: true }) tanggal?: string,
+    @Args('status', { nullable: true }) status?: string,
+    @Args('keterangan', { nullable: true }) keterangan?: string,
+  ) {
+    const slug = await this.service.resolveTenantSlug(userId);
+    const data: Record<string, unknown> = { inventarisId };
+    for (const [k, v] of Object.entries({ siswaId, jumlah, tanggal, status, keterangan })) { if (v !== undefined) data[k] = v; }
+    return this.service.createDistribusi(slug, data);
+  }
+
+  @Mutation(() => InventarisDistribusi, { name: 'updateInventarisDistribusi' })
+  @RequirePermissions('inventaris.update')
+  async updateDistribusi(
+    @CurrentUser() userId: string,
+    @Args('id', { type: () => ID }) id: string,
+    @Args('siswaId', { type: () => ID, nullable: true }) siswaId?: string,
+    @Args('jumlah', { type: () => Int, nullable: true }) jumlah?: number,
+    @Args('tanggal', { nullable: true }) tanggal?: string,
+    @Args('status', { nullable: true }) status?: string,
+    @Args('keterangan', { nullable: true }) keterangan?: string,
+  ) {
+    const slug = await this.service.resolveTenantSlug(userId);
+    const data: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries({ siswaId, jumlah, tanggal, status, keterangan })) { if (v !== undefined) data[k] = v; }
+    return this.service.updateDistribusi(slug, id, data);
+  }
+
+  @Mutation(() => Boolean, { name: 'deleteInventarisDistribusi' })
+  @RequirePermissions('inventaris.delete')
+  async deleteDistribusi(@CurrentUser() userId: string, @Args('id', { type: () => ID }) id: string) {
+    const slug = await this.service.resolveTenantSlug(userId);
+    return this.service.deleteDistribusi(slug, id);
+  }
+
+  // ========== INVENTARIS MUTASI ==========
+  @Query(() => [InventarisMutasi], { name: 'inventarisMutasi' })
+  @RequirePermissions('inventaris.index')
+  async getMutasi(@CurrentUser() userId: string) {
+    const slug = await this.service.resolveTenantSlug(userId);
+    return this.service.findAllMutasi(slug);
+  }
+
+  @Mutation(() => InventarisMutasi, { name: 'createInventarisMutasi' })
+  @RequirePermissions('inventaris.create')
+  async createMutasi(
+    @CurrentUser() userId: string,
+    @Args('inventarisId', { type: () => ID }) inventarisId: string,
+    @Args('tipe') tipe: string,
+    @Args('jumlah', { type: () => Int }) jumlah: number,
+    @Args('tanggal', { nullable: true }) tanggal?: string,
+    @Args('keterangan', { nullable: true }) keterangan?: string,
+  ) {
+    const slug = await this.service.resolveTenantSlug(userId);
+    const data: Record<string, unknown> = { inventarisId, tipe, jumlah };
+    for (const [k, v] of Object.entries({ tanggal, keterangan })) { if (v !== undefined) data[k] = v; }
+    return this.service.createMutasi(slug, data);
+  }
+
+  @Mutation(() => Boolean, { name: 'deleteInventarisMutasi' })
+  @RequirePermissions('inventaris.delete')
+  async deleteMutasi(@CurrentUser() userId: string, @Args('id', { type: () => ID }) id: string) {
+    const slug = await this.service.resolveTenantSlug(userId);
+    return this.service.deleteMutasi(slug, id);
   }
 }

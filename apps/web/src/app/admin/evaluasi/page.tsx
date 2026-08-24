@@ -1,11 +1,13 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useQuery, useMutation, gql } from '@apollo/client';
 import { Button } from '@/components/ui/button';
 import { DataTable, ColumnDef } from '@/components/ui/table/data-table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Plus, Trash2, Loader2, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, Loader2, AlertCircle, Radar as RadarIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Tooltip } from 'recharts';
 
 const GET = gql`query GetEvaluasi { evaluasi { id siswaId pelatihId semester tahunAjaran teknik fisik taktik mental catatanPelatih } }`;
 const GET_SISWA = gql`query GetSiswaEv { siswa { id namaLengkap } }`;
@@ -19,13 +21,41 @@ export default function AdminEvaluasiPage() {
   const { data: siswaData } = useQuery<{ siswa: { id: string; namaLengkap: string }[] }>(GET_SISWA);
   const [createEv] = useMutation(CREATE);
   const [deleteEv] = useMutation(DELETE);
+  const { ask, dialog } = useConfirmDialog();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [f, setF] = useState({ siswaId: '', semester: '1', tahunAjaran: '2025/2026', teknik: '', fisik: '', taktik: '', mental: '', catatanPelatih: '' });
   const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }));
   const siswaMap = Object.fromEntries((siswaData?.siswa || []).map(s => [s.id, s.namaLengkap]));
 
-  const handleDelete = async (i: EvData) => { if (!confirm('Hapus?')) return; try { await deleteEv({ variables: { id: i.id } }); toast.success('Dihapus.'); refetch(); } catch (e: any) { toast.error(e?.message); } };
+  // === Radar chart 4 dimensi (teknik/fisik/taktik/mental) per siswa ===
+  const [radarSiswa, setRadarSiswa] = useState('');
+  const evaluasiList = data?.evaluasi || [];
+
+  const radarData = useMemo(() => {
+    if (!radarSiswa) return null;
+    const milik = evaluasiList.filter(e => e.siswaId === radarSiswa);
+    if (milik.length === 0) return null;
+    // Ambil evaluasi terbaru (tahun ajaran desc, lalu semester desc)
+    const terbaru = [...milik].sort((a, b) =>
+      b.tahunAjaran.localeCompare(a.tahunAjaran) || String(b.semester).localeCompare(String(a.semester)),
+    )[0]!;
+    return {
+      label: `Sem ${terbaru.semester} ${terbaru.tahunAjaran}`,
+      dimensi: [
+        { dimensi: 'Teknik', nilai: Number(terbaru.teknik ?? 0) },
+        { dimensi: 'Fisik', nilai: Number(terbaru.fisik ?? 0) },
+        { dimensi: 'Taktik', nilai: Number(terbaru.taktik ?? 0) },
+        { dimensi: 'Mental', nilai: Number(terbaru.mental ?? 0) },
+      ],
+    };
+  }, [radarSiswa, evaluasiList]);
+
+  const handleDelete = (i: EvData) => ask({
+    title: 'Hapus evaluasi?',
+    description: `Evaluasi ${siswaMap[i.siswaId] || i.siswaId} semester ${i.semester} ${i.tahunAjaran} akan dihapus permanen.`,
+    onConfirm: async () => { try { await deleteEv({ variables: { id: i.id } }); toast.success('Dihapus.'); refetch(); } catch (e: any) { toast.error(e?.message); } },
+  });
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setSubmitting(true);
     try {
@@ -58,6 +88,47 @@ export default function AdminEvaluasiPage() {
           <DataTable data={data?.evaluasi || []} columns={columns} loading={loading} searchPlaceholder="Cari..." searchKeys={['siswaId']} emptyMessage="Belum ada evaluasi." actions={<Button onClick={() => { setF({ siswaId: '', semester: '1', tahunAjaran: '2025/2026', teknik: '', fisik: '', taktik: '', mental: '', catatanPelatih: '' }); setDialogOpen(true); }} className="bg-primary hover:bg-primary/95 text-primary-foreground font-bold rounded-md gap-1.5 h-9 px-3 text-xs cursor-pointer"><Plus className="w-3.5 h-3.5" /><span>Tambah</span></Button>} />
         </div>
       )}
+
+      {/* Radar chart 4 dimensi per siswa */}
+      <div className="bg-card border border-border rounded-md p-5 shadow-2xs space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h3 className="font-black text-sm text-foreground flex items-center gap-2"><RadarIcon className="w-4 h-4 text-primary" /> Profil Kemampuan (Radar 4 Dimensi)</h3>
+          <select value={radarSiswa} onChange={e => setRadarSiswa(e.target.value)} className="px-3.5 py-2 text-xs bg-background border border-border rounded-xl focus:border-primary text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-all font-bold">
+            <option value="">-- Pilih Siswa --</option>
+            {(siswaData?.siswa || []).map(s => <option key={s.id} value={s.id}>{s.namaLengkap}</option>)}
+          </select>
+        </div>
+        {!radarSiswa ? (
+          <div className="h-56 flex items-center justify-center text-2xs text-muted-foreground font-semibold">Pilih siswa untuk melihat profil kemampuannya.</div>
+        ) : !radarData ? (
+          <div className="h-56 flex items-center justify-center text-2xs text-muted-foreground font-semibold">Belum ada evaluasi untuk siswa ini.</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart data={radarData.dimensi} outerRadius="75%">
+                  <PolarGrid stroke="var(--border)" />
+                  <PolarAngleAxis dataKey="dimensi" tick={{ fontSize: 11, fill: 'var(--muted-foreground)', fontWeight: 700 }} />
+                  <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 9, fill: 'var(--muted-foreground)' }} tickCount={5} />
+                  <Radar dataKey="nilai" stroke="var(--chart-1)" fill="var(--chart-1)" fillOpacity={0.35} />
+                  <Tooltip formatter={(v) => [`${v} / 100`, 'Nilai']} />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="space-y-2">
+              <p className="text-2xs font-bold text-muted-foreground uppercase tracking-wide">Evaluasi terbaru: {radarData.label}</p>
+              <div className="grid grid-cols-2 gap-2">
+                {radarData.dimensi.map(d => (
+                  <div key={d.dimensi} className="p-3 bg-background border border-border rounded-xl">
+                    <p className="text-4xs font-bold text-muted-foreground uppercase">{d.dimensi}</p>
+                    <p className="text-lg font-black text-primary">{d.nilai}<span className="text-4xs text-muted-foreground font-bold"> /100</span></p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="bg-card border border-border text-foreground max-w-lg rounded-2xl p-6 shadow-xl">
           <DialogHeader><DialogTitle className="font-black text-xl">Tambah Evaluasi</DialogTitle></DialogHeader>
@@ -80,6 +151,7 @@ export default function AdminEvaluasiPage() {
           </form>
         </DialogContent>
       </Dialog>
+      {dialog}
     </div>
   );
 }

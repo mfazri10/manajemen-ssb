@@ -7,6 +7,7 @@ import { DataTable, ColumnDef } from '@/components/ui/table/data-table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Plus, Edit2, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 const GET_GOR = gql`query { gor { id nama } }`;
 const GET_LAPANGAN = gql`query { lapangan { id gorId nama tipe permukaan indoor tarifPerJam kapasitas status keterangan } }`;
@@ -28,6 +29,7 @@ export default function LapanganManagement() {
   const [createLapangan] = useMutation(CREATE_LAPANGAN);
   const [updateLapangan] = useMutation(UPDATE_LAPANGAN);
   const [deleteLapangan] = useMutation(DELETE_LAPANGAN);
+  const { ask, dialog } = useConfirmDialog();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
@@ -68,11 +70,14 @@ export default function LapanganManagement() {
     finally { setSaving(false); }
   };
 
-  const onDelete = async (row: LapData) => {
-    if (!confirm(`Hapus lapangan "${row.nama}"?`)) return;
-    try { await deleteLapangan({ variables: { id: row.id } }); toast.success('Lapangan dihapus.'); refetch(); }
-    catch (err: any) { toast.error(err?.message || 'Gagal menghapus.'); }
-  };
+  const onDelete = (row: LapData) => ask({
+    title: 'Hapus lapangan?',
+    description: `Lapangan "${row.nama}" akan dihapus permanen.`,
+    onConfirm: async () => {
+      try { await deleteLapangan({ variables: { id: row.id } }); toast.success('Lapangan dihapus.'); refetch(); }
+      catch (err: any) { toast.error(err?.message || 'Gagal menghapus.'); }
+    },
+  });
 
   const columns: ColumnDef<LapData>[] = [
     { header: 'Nama Lapangan', accessorKey: 'nama', className: 'font-extrabold text-sm text-foreground' },
@@ -183,6 +188,7 @@ export default function LapanganManagement() {
           </form>
         </DialogContent>
       </Dialog>
+      {dialog}
     </div>
   );
 }

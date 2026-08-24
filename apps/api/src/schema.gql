@@ -12,6 +12,74 @@ type Absensi {
   tanggal: String!
 }
 
+type Affiliate {
+  atasNama: String
+  createdAt: DateTime
+  id: ID!
+  kodeReferral: String!
+  namaBank: String
+  nomorRekening: String
+  saldoAktif: Float!
+  status: String!
+  totalKomisiCair: Float!
+  totalKomisiDisetujui: Float!
+  totalKomisiPending: Float!
+  userId: String!
+}
+
+type AffiliateLink {
+  affiliateId: String!
+  createdAt: DateTime
+  id: ID!
+  nama: String!
+  slug: String!
+  totalKlik: Int!
+  totalKonversi: Int!
+  utmCampaign: String
+}
+
+type AffiliatePayout {
+  affiliateId: String!
+  buktiTransfer: String
+  catatan: String
+  id: ID!
+  jumlah: Float!
+  metode: String!
+  paidAt: DateTime
+  processedAt: DateTime
+  referensiBiaya: String
+  requestedAt: DateTime
+  status: String!
+}
+
+type AffiliateReferral {
+  affiliateId: String!
+  akademiId: String!
+  approvedAt: DateTime
+  catatan: String
+  conversionAt: DateTime
+  createdAt: DateTime
+  id: ID!
+  komisiFlat: Float!
+  komisiPctEarned: Float!
+  komisiTotal: Float!
+  linkId: String
+  paidAt: DateTime
+  paymentAmount: Float!
+  paymentBulanKe: Int!
+  status: String!
+  visitId: String
+}
+
+type AffiliateStats {
+  saldoAktif: Float!
+  totalKlik: Int!
+  totalKomisiCair: Float!
+  totalKomisiDisetujui: Float!
+  totalKomisiPending: Float!
+  totalReferral: Int!
+}
+
 type Akademi {
   alamat: String
   createdAt: DateTime!
@@ -276,10 +344,13 @@ type Menu {
 }
 
 type Mutation {
+  approveAffiliate(id: String!): Affiliate!
+  approveReferral(id: String!): AffiliateReferral!
   broadcastPengumuman(channel: String!, pengumumanId: ID!): Boolean!
   cancelLangganan(id: ID!): LanggananAkademi!
   checkPaymentStatus(id: ID!): Payment!
   createAbsensi(jadwalId: ID!, keterangan: String, siswaId: ID!, status: String!, tanggal: String!): Absensi!
+  createAffiliateLink(nama: String!, utmCampaign: String): AffiliateLink!
   createAuditLog(akademiId: String!, aksi: String!, dataBaru: String, dataLama: String, entitas: String, entitasId: String, ipAddress: String): AuditLog!
   createBukuKas(jumlah: Float!, kategori: String, keterangan: String, tanggal: String!, tipe: String!): BukuKas!
   createEvaluasi(catatanPelatih: String, fisik: Float, mental: Float, pelatihId: ID, semester: String!, siswaId: ID!, tahunAjaran: String!, taktik: Float, teknik: Float): Evaluasi!
@@ -301,7 +372,7 @@ type Mutation {
   createNotifikasi(isi: String!, judul: String!, penerimaUserId: String, sentVia: String, target: String, tipe: String): Notifikasi!
   createOrangTua(email: String, hpAyah: String, hpIbu: String, hpOrangTua: String!, hubungan: String, namaOrangTua: String!, siswaId: ID!): OrangTua!
   createPaketLangganan(aktif: Boolean, durasiBulan: Float!, fitur: String, harga: Float!, maxPelatih: Float, maxSiswa: Float, nama: String!): PaketLangganan!
-  createPayment(langgananId: ID!, method: String!): Payment!
+  createPayment(affiliateRef: String, langgananId: ID!, method: String!): Payment!
   createPelanggaranSiswa(keterangan: String, masterPelanggaranId: ID, siswaId: ID!, tanggal: String!): PelanggaranSiswa!
   createPelatih(catatan: String, desa: String, email: String, fotoUrl: String, kabupaten: String, kecamatan: String, namaLengkap: String!, noHp: String, provinsi: String, status: String, tanggalLahir: String, tempatLahir: String): Pelatih!
   createPelatihJabatan(jabatan: String!, kelompokUmurId: ID, pelatihId: ID!): PelatihJabatan!
@@ -357,12 +428,17 @@ type Mutation {
   deleteTurnamenPeserta(id: ID!): Boolean!
   deleteUser(id: String!): Boolean!
   markNotifikasiRead(id: ID!): Notifikasi!
+  processPayout(buktiTransfer: String, id: String!, referensiBiaya: String): AffiliatePayout!
+  registerAffiliate(atasNama: String, namaBank: String, nomorRekening: String): Affiliate!
   registerAkademi(alamat: String, email: String, nama: String!, noHp: String, slug: String!, type: String! = "akademi", website: String): Akademi!
+  requestPayout(jumlah: Float!, metode: String!): AffiliatePayout!
   sendEmail(message: String!, subject: String!, to: String!): Boolean!
   sendWhatsApp(message: String!, phone: String!): Boolean!
   submitOnboardingSurvey(productType: String!, rawAnswersJson: String): UserOnboardingSurvey!
   subscribePaket(akademiId: String!, paketId: ID!): LanggananAkademi!
+  suspendAffiliate(alasan: String, id: String!): Affiliate!
   updateAbsensi(id: ID!, keterangan: String, status: String, tanggal: String): Absensi!
+  updateAffiliateBank(atasNama: String!, namaBank: String!, nomorRekening: String!): Affiliate!
   updateBukuKas(id: ID!, jumlah: Float, kategori: String, keterangan: String, tanggal: String, tipe: String): BukuKas!
   updateEvaluasi(catatanPelatih: String, fisik: Float, id: ID!, mental: Float, semester: String, tahunAjaran: String, taktik: Float, teknik: Float): Evaluasi!
   updateFeature(fungsi: [String!]!, label: String!, newId: String!, oldId: String!): Boolean!
@@ -546,6 +622,9 @@ type Query {
   absensiByJadwal(jadwalId: ID!): [Absensi!]!
   absensiBySiswa(siswaId: ID!): [Absensi!]!
   activeMenuTree: [Menu!]!
+  affiliateById(id: String!): Affiliate
+  allAffiliates(status: String): [Affiliate!]!
+  allPayouts(status: String): [AffiliatePayout!]!
   auditLog(akademiId: String!, entitas: String, limit: Int): [AuditLog!]!
   bukuKas: [BukuKas!]!
   dashboardSummary: DashboardSummary!
@@ -570,9 +649,14 @@ type Query {
   materiLatihan: [MateriLatihan!]!
   me: UserProfile!
   menus: [Menu!]!
+  myAffiliate: Affiliate
+  myAffiliateLinks: [AffiliateLink!]!
+  myAffiliateStats: AffiliateStats
   myAkademis: [Akademi!]!
   myOnboardingProgress: [OnboardingStep!]!
   myOnboardingSurvey: UserOnboardingSurvey
+  myPayouts: [AffiliatePayout!]!
+  myReferrals(status: String): [AffiliateReferral!]!
   mySubscription: SubscriptionPublic
   notifikasi: [Notifikasi!]!
   orangTua: [OrangTua!]!

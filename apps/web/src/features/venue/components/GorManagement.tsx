@@ -7,6 +7,7 @@ import { DataTable, ColumnDef } from '@/components/ui/table/data-table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Plus, Edit2, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 const GET_GOR = gql`query { gor { id nama kota alamat telepon jamBuka jamTutup status } }`;
 const CREATE_GOR = gql`mutation CreateGor($nama:String!,$kota:String,$alamat:String,$telepon:String,$jamBuka:String,$jamTutup:String,$status:String){ createGor(nama:$nama,kota:$kota,alamat:$alamat,telepon:$telepon,jamBuka:$jamBuka,jamTutup:$jamTutup,status:$status){ id } }`;
@@ -25,6 +26,7 @@ export default function GorManagement() {
   const [createGor] = useMutation(CREATE_GOR);
   const [updateGor] = useMutation(UPDATE_GOR);
   const [deleteGor] = useMutation(DELETE_GOR);
+  const { ask, dialog } = useConfirmDialog();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
@@ -54,11 +56,14 @@ export default function GorManagement() {
     finally { setSaving(false); }
   };
 
-  const onDelete = async (row: GorData) => {
-    if (!confirm(`Hapus GOR "${row.nama}"?`)) return;
-    try { await deleteGor({ variables: { id: row.id } }); toast.success('GOR dihapus.'); refetch(); }
-    catch (err: any) { toast.error(err?.message || 'Gagal menghapus.'); }
-  };
+  const onDelete = (row: GorData) => ask({
+    title: 'Hapus GOR?',
+    description: `GOR "${row.nama}" akan dihapus permanen.`,
+    onConfirm: async () => {
+      try { await deleteGor({ variables: { id: row.id } }); toast.success('GOR dihapus.'); refetch(); }
+      catch (err: any) { toast.error(err?.message || 'Gagal menghapus.'); }
+    },
+  });
 
   const columns: ColumnDef<GorData>[] = [
     { header: 'Nama GOR', accessorKey: 'nama', className: 'font-extrabold text-sm text-foreground' },
@@ -153,6 +158,7 @@ export default function GorManagement() {
           </form>
         </DialogContent>
       </Dialog>
+      {dialog}
     </div>
   );
 }

@@ -80,11 +80,13 @@ Untuk menambahkan komponen Shadcn UI ke aplikasi `web`, jalankan perintah beriku
 bunx shadcn@latest add button -c apps/web
 ```
 
-Ini akan menempatkan komponen UI ke folder `packages/ui/src/components`. Untuk menggunakannya pada aplikasi Next.js:
+Komponen Shadcn UI ditempatkan di `apps/web/src/components/ui` (lihat `apps/web/components.json`). Untuk menggunakannya pada aplikasi Next.js, gunakan alias `@/`:
 
 ```tsx
-import { Button } from "@workspace/ui/components/button";
+import { Button } from "@/components/ui/button";
 ```
+
+> Catatan: folder `packages/ui` saat ini belum berisi komponen; seluruh komponen UI web berada di `apps/web/src/components/ui`.
 
 ### Backend API (NestJS)
 

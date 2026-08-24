@@ -111,4 +111,50 @@ export class Fase34Service {
     await this.dbService.db.delete(t.inventaris).where(eq(t.inventaris.id, id));
     return true;
   }
+
+  // ========== INVENTARIS DISTRIBUSI ==========
+  async findAllDistribusi(slug: string) {
+    const t = this.getTenant(slug);
+    return this.dbService.db.select().from(t.inventarisDistribusi).orderBy(desc(t.inventarisDistribusi.createdAt));
+  }
+  async createDistribusi(slug: string, data: Record<string, unknown>) {
+    const t = this.getTenant(slug);
+    const [r] = await this.dbService.db.insert(t.inventarisDistribusi).values(data as any).returning();
+    return r;
+  }
+  async updateDistribusi(slug: string, id: string, data: Record<string, unknown>) {
+    const t = this.getTenant(slug);
+    const existing = await this.dbService.db.select().from(t.inventarisDistribusi).where(eq(t.inventarisDistribusi.id, id)).limit(1);
+    if (!existing.length) throw new NotFoundException('Data distribusi tidak ditemukan.');
+    const updateData: Record<string, unknown> = {};
+    for (const k of ['inventarisId', 'siswaId', 'jumlah', 'tanggal', 'status', 'keterangan']) { if (data[k] !== undefined) updateData[k] = data[k]; }
+    if (!Object.keys(updateData).length) throw new BadRequestException('Tidak ada data yang diubah.');
+    const [r] = await this.dbService.db.update(t.inventarisDistribusi).set(updateData).where(eq(t.inventarisDistribusi.id, id)).returning();
+    return r;
+  }
+  async deleteDistribusi(slug: string, id: string) {
+    const t = this.getTenant(slug);
+    const existing = await this.dbService.db.select().from(t.inventarisDistribusi).where(eq(t.inventarisDistribusi.id, id)).limit(1);
+    if (!existing.length) throw new NotFoundException('Data distribusi tidak ditemukan.');
+    await this.dbService.db.delete(t.inventarisDistribusi).where(eq(t.inventarisDistribusi.id, id));
+    return true;
+  }
+
+  // ========== INVENTARIS MUTASI ==========
+  async findAllMutasi(slug: string) {
+    const t = this.getTenant(slug);
+    return this.dbService.db.select().from(t.inventarisMutasi).orderBy(desc(t.inventarisMutasi.createdAt));
+  }
+  async createMutasi(slug: string, data: Record<string, unknown>) {
+    const t = this.getTenant(slug);
+    const [r] = await this.dbService.db.insert(t.inventarisMutasi).values(data as any).returning();
+    return r;
+  }
+  async deleteMutasi(slug: string, id: string) {
+    const t = this.getTenant(slug);
+    const existing = await this.dbService.db.select().from(t.inventarisMutasi).where(eq(t.inventarisMutasi.id, id)).limit(1);
+    if (!existing.length) throw new NotFoundException('Data mutasi tidak ditemukan.');
+    await this.dbService.db.delete(t.inventarisMutasi).where(eq(t.inventarisMutasi.id, id));
+    return true;
+  }
 }

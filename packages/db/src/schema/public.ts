@@ -224,3 +224,160 @@ export const userOnboardingSurveyRelations = relations(userOnboardingSurvey, ({ 
 export const onboardingProgressRelations = relations(onboardingProgress, ({ one }) => ({
   user: one(users, { fields: [onboardingProgress.userId], references: [users.id] }),
 }));
+
+// ============================================================
+// AFFILIATE PROGRAM
+// ============================================================
+import { numeric, inet, index } from 'drizzle-orm/pg-core';
+
+export const affiliates = pgTable('affiliates', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text('user_id').notNull().unique().references(() => users.id, { onDelete: 'cascade' }),
+  kodeReferral: varchar('kode_referral', { length: 20 }).notNull().unique(),
+  tier: varchar('tier', { length: 20 }).notNull().default('starter'),
+  status: varchar('status', { length: 20 }).notNull().default('pending'),
+  // Komisi override individual (null = ikuti tier default)
+  komisiFlatIdr: numeric('komisi_flat_idr', { precision: 12, scale: 2 }),
+  komisiPctY1: numeric('komisi_pct_y1', { precision: 5, scale: 2 }),
+  komisiPctY2: numeric('komisi_pct_y2', { precision: 5, scale: 2 }),
+  // Info bank pencairan
+  namaBank: varchar('nama_bank', { length: 50 }),
+  nomorRekening: varchar('nomor_rekening', { length: 30 }),
+  atasNama: varchar('atas_nama', { length: 100 }),
+  // Statistik agregat
+  totalKlik: integer('total_klik').notNull().default(0),
+  totalReferral: integer('total_referral').notNull().default(0),
+  totalKomisi: numeric('total_komisi', { precision: 14, scale: 2 }).notNull().default('0'),
+  saldoTersedia: numeric('saldo_tersedia', { precision: 14, scale: 2 }).notNull().default('0'),
+  saldoPending: numeric('saldo_pending', { precision: 14, scale: 2 }).notNull().default('0'),
+  catatanAdmin: text('catatan_admin'),
+  joinedAt: timestamp('joined_at').defaultNow().notNull(),
+  approvedAt: timestamp('approved_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (t) => [
+  index('idx_affiliates_user_id').on(t.userId),
+  index('idx_affiliates_kode').on(t.kodeReferral),
+  index('idx_affiliates_tier').on(t.tier),
+  index('idx_affiliates_status').on(t.status),
+]);
+
+export const affiliateLinks = pgTable('affiliate_links', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  affiliateId: text('affiliate_id').notNull().references(() => affiliates.id, { onDelete: 'cascade' }),
+  nama: varchar('nama', { length: 100 }).notNull().default('Link Utama'),
+  slug: varchar('slug', { length: 50 }).notNull().unique(),
+  targetUrl: text('target_url').notNull().default('/register'),
+  utmSource: varchar('utm_source', { length: 50 }).default('affiliate'),
+  utmMedium: varchar('utm_medium', { length: 50 }).default('referral'),
+  utmCampaign: varchar('utm_campaign', { length: 100 }),
+  aktif: boolean('aktif').notNull().default(true),
+  totalKlik: integer('total_klik').notNull().default(0),
+  totalKonversi: integer('total_konversi').notNull().default(0),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (t) => [
+  index('idx_aff_links_affiliate').on(t.affiliateId),
+  index('idx_aff_links_slug').on(t.slug),
+]);
+
+export const affiliateVisits = pgTable('affiliate_visits', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  affiliateId: text('affiliate_id').notNull().references(() => affiliates.id, { onDelete: 'cascade' }),
+  linkId: text('link_id').references(() => affiliateLinks.id, { onDelete: 'set null' }),
+  ipAddress: inet('ip_address'),
+  userAgent: text('user_agent'),
+  referrerUrl: text('referrer_url'),
+  converted: boolean('converted').notNull().default(false),
+  convertedAt: timestamp('converted_at'),
+  visitedAt: timestamp('visited_at').defaultNow().notNull(),
+}, (t) => [
+  index('idx_aff_visits_affiliate').on(t.affiliateId),
+  index('idx_aff_visits_converted').on(t.converted),
+]);
+
+export const affiliateReferrals = pgTable('affiliate_referrals', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  affiliateId: text('affiliate_id').notNull().references(() => affiliates.id, { onDelete: 'restrict' }),
+  linkId: text('link_id').references(() => affiliateLinks.id, { onDelete: 'set null' }),
+  visitId: text('visit_id').references(() => affiliateVisits.id, { onDelete: 'set null' }),
+  akademiId: text('akademi_id').notNull().references(() => akademi.id, { onDelete: 'restrict' }),
+  // Nilai pembayaran langganan yang memicu komisi
+  paymentAmount: numeric('payment_amount', { precision: 12, scale: 2 }).notNull(),
+  paymentBulanKe: integer('payment_bulan_ke').notNull().default(1),
+  // Rincian komisi
+  komisiFlat: numeric('komisi_flat', { precision: 12, scale: 2 }).notNull().default('0'),
+  komisiPctEarned: numeric('komisi_pct_earned', { precision: 12, scale: 2 }).notNull().default('0'),
+  komisiTotal: numeric('komisi_total', { precision: 12, scale: 2 }).notNull().default('0'),
+  status: varchar('status', { length: 20 }).notNull().default('pending'),
+  catatan: text('catatan'),
+  conversionAt: timestamp('conversion_at').defaultNow().notNull(),
+  approvedAt: timestamp('approved_at'),
+  paidAt: timestamp('paid_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (t) => [
+  index('idx_aff_referrals_affiliate').on(t.affiliateId),
+  index('idx_aff_referrals_akademi').on(t.akademiId),
+  index('idx_aff_referrals_status').on(t.status),
+]);
+
+export const affiliatePayouts = pgTable('affiliate_payouts', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  affiliateId: text('affiliate_id').notNull().references(() => affiliates.id, { onDelete: 'restrict' }),
+  jumlah: numeric('jumlah', { precision: 12, scale: 2 }).notNull(),
+  metode: varchar('metode', { length: 30 }).notNull().default('transfer_bank'),
+  status: varchar('status', { length: 20 }).notNull().default('requested'),
+  buktiTransfer: text('bukti_transfer'),
+  referensiBiaya: varchar('referensi_biaya', { length: 100 }),
+  catatan: text('catatan'),
+  requestedAt: timestamp('requested_at').defaultNow().notNull(),
+  processedAt: timestamp('processed_at'),
+  paidAt: timestamp('paid_at'),
+}, (t) => [
+  index('idx_aff_payouts_affiliate').on(t.affiliateId),
+  index('idx_aff_payouts_status').on(t.status),
+]);
+
+export const affiliatePayoutItems = pgTable('affiliate_payout_items', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  payoutId: text('payout_id').notNull().references(() => affiliatePayouts.id, { onDelete: 'cascade' }),
+  referralId: text('referral_id').notNull().references(() => affiliateReferrals.id, { onDelete: 'restrict' }),
+  jumlah: numeric('jumlah', { precision: 12, scale: 2 }).notNull(),
+});
+
+// === AFFILIATE RELATIONS ===
+export const affiliatesRelations = relations(affiliates, ({ one, many }) => ({
+  user: one(users, { fields: [affiliates.userId], references: [users.id] }),
+  links: many(affiliateLinks),
+  visits: many(affiliateVisits),
+  referrals: many(affiliateReferrals),
+  payouts: many(affiliatePayouts),
+}));
+
+export const affiliateLinksRelations = relations(affiliateLinks, ({ one, many }) => ({
+  affiliate: one(affiliates, { fields: [affiliateLinks.affiliateId], references: [affiliates.id] }),
+  visits: many(affiliateVisits),
+  referrals: many(affiliateReferrals),
+}));
+
+export const affiliateVisitsRelations = relations(affiliateVisits, ({ one }) => ({
+  affiliate: one(affiliates, { fields: [affiliateVisits.affiliateId], references: [affiliates.id] }),
+  link: one(affiliateLinks, { fields: [affiliateVisits.linkId], references: [affiliateLinks.id] }),
+}));
+
+export const affiliateReferralsRelations = relations(affiliateReferrals, ({ one, many }) => ({
+  affiliate: one(affiliates, { fields: [affiliateReferrals.affiliateId], references: [affiliates.id] }),
+  link: one(affiliateLinks, { fields: [affiliateReferrals.linkId], references: [affiliateLinks.id] }),
+  visit: one(affiliateVisits, { fields: [affiliateReferrals.visitId], references: [affiliateVisits.id] }),
+  akademi: one(akademi, { fields: [affiliateReferrals.akademiId], references: [akademi.id] }),
+  payoutItems: many(affiliatePayoutItems),
+}));
+
+export const affiliatePayoutsRelations = relations(affiliatePayouts, ({ one, many }) => ({
+  affiliate: one(affiliates, { fields: [affiliatePayouts.affiliateId], references: [affiliates.id] }),
+  items: many(affiliatePayoutItems),
+}));
+
+export const affiliatePayoutItemsRelations = relations(affiliatePayoutItems, ({ one }) => ({
+  payout: one(affiliatePayouts, { fields: [affiliatePayoutItems.payoutId], references: [affiliatePayouts.id] }),
+  referral: one(affiliateReferrals, { fields: [affiliatePayoutItems.referralId], references: [affiliateReferrals.id] }),
+}));

@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import * as LucideIcons from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 const GET_MENUS = gql`
   query GetMenus {
@@ -140,6 +141,7 @@ export default function AdminMenuPage() {
   const [createMenu] = useMutation(CREATE_MENU);
   const [updateMenu] = useMutation(UPDATE_MENU);
   const [deleteMenu] = useMutation(DELETE_MENU);
+  const { ask, dialog } = useConfirmDialog();
 
   // UI States
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -231,16 +233,19 @@ export default function AdminMenuPage() {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus menu ini beserta izin terkait?')) return;
-    try {
-      await deleteMenu({ variables: { id } });
-      toast.success('Menu berhasil dihapus!');
-      refetch();
-    } catch (err: any) {
-      toast.error(err.message || 'Gagal menghapus menu');
-    }
-  };
+  const handleDelete = (id: number) => ask({
+    title: 'Hapus menu?',
+    description: 'Menu ini beserta izin terkait akan dihapus permanen.',
+    onConfirm: async () => {
+      try {
+        await deleteMenu({ variables: { id } });
+        toast.success('Menu berhasil dihapus!');
+        refetch();
+      } catch (err: any) {
+        toast.error(err.message || 'Gagal menghapus menu');
+      }
+    },
+  });
 
   // Reusable Column definitions for DataTable
   const columns: ColumnDef<GQLMenu>[] = [
@@ -505,6 +510,7 @@ export default function AdminMenuPage() {
           </form>
         </DialogContent>
       </Dialog>
+      {dialog}
     </div>
   );
 }

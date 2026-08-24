@@ -6,6 +6,7 @@ import { DataTable, ColumnDef } from '@/components/ui/table/data-table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Plus, Edit2, Trash2, Loader2, AlertCircle, Trophy } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 const GET = gql`query GetTurnamen { turnamen { id nama tanggalMulai tanggalSelesai lokasi kategoriUmur hasil } }`;
 const CREATE = gql`mutation CreateTurnamen($nama:String!,$tanggalMulai:String,$tanggalSelesai:String,$lokasi:String,$kategoriUmur:String) { createTurnamen(nama:$nama,tanggalMulai:$tanggalMulai,tanggalSelesai:$tanggalSelesai,lokasi:$lokasi,kategoriUmur:$kategoriUmur) { id } }`;
@@ -19,6 +20,7 @@ export default function AdminTurnamenPage() {
   const [create] = useMutation(CREATE);
   const [update] = useMutation(UPDATE);
   const [del] = useMutation(DELETE);
+  const { ask, dialog } = useConfirmDialog();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
   const [selected, setSelected] = useState<Data | null>(null);
@@ -29,7 +31,11 @@ export default function AdminTurnamenPage() {
 
   const handleOpenCreate = () => { setFormMode('create'); setSelected(null); setF(empty); setDialogOpen(true); };
   const handleOpenEdit = (i: Data) => { setFormMode('edit'); setSelected(i); setF({ nama: i.nama, tanggalMulai: i.tanggalMulai || '', tanggalSelesai: i.tanggalSelesai || '', lokasi: i.lokasi || '', kategoriUmur: i.kategoriUmur || '', hasil: i.hasil || '' }); setDialogOpen(true); };
-  const handleDelete = async (i: Data) => { if (!confirm('Hapus?')) return; try { await del({ variables: { id: i.id } }); toast.success('Dihapus.'); refetch(); } catch (e: any) { toast.error(e?.message); } };
+  const handleDelete = (i: Data) => ask({
+    title: 'Hapus turnamen?',
+    description: `Turnamen "${i.nama}" akan dihapus permanen.`,
+    onConfirm: async () => { try { await del({ variables: { id: i.id } }); toast.success('Dihapus.'); refetch(); } catch (e: any) { toast.error(e?.message); } },
+  });
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setSubmitting(true);
     try {
@@ -87,6 +93,7 @@ export default function AdminTurnamenPage() {
           </form>
         </DialogContent>
       </Dialog>
+      {dialog}
     </div>
   );
 }

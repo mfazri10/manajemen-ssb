@@ -23,112 +23,112 @@
 ## ✅ Checklist Fitur
 
 ### 🏗️ Fase 0 — Fondasi Teknis
-- [ ] Tentukan & setup tech stack (frontend, backend, DB)
-- [ ] Setup repository, env, linting, CI dasar
-- [ ] Jalankan `database/schema.sql` ke PostgreSQL
-- [ ] Jalankan `database/seed.sql` (data awal)
-- [ ] Koneksi DB + migration tool (Prisma/Drizzle/Eloquent)
-- [ ] Auth: register, login, logout, reset password
-- [ ] RBAC: role superadmin / admin / pelatih / orang_tua
-- [ ] Multi-tenant: scoping query per `akademi_id` (+ Row-Level Security)
-- [ ] Middleware proteksi route per role
-- [ ] Layout dasar (sidebar, header, navigasi)
+- [x] Tentukan & setup tech stack (frontend, backend, DB)
+- [x] Setup repository, env, linting, CI dasar
+- [x] Jalankan `database/schema.sql` ke PostgreSQL
+- [x] Jalankan `database/seed.sql` (data awal)
+- [x] Koneksi DB + migration tool (Prisma/Drizzle/Eloquent)
+- [x] Auth: register, login, logout, reset password
+- [x] RBAC: role superadmin / admin / pelatih / orang_tua
+- [x] Multi-tenant: scoping query per `akademi_id` (+ Row-Level Security)
+- [x] Middleware proteksi route per role
+- [x] Layout dasar (sidebar, header, navigasi)
 
 ### 🧩 Fase 0.5 — Master Data
-- [ ] CRUD Akademi (profil, logo, paket)
-- [ ] CRUD Kelompok Umur (U-6 s/d U-18)
-- [ ] CRUD Master Posisi (GK, DF, MF, FW)
-- [ ] CRUD Master Pelanggaran
-- [ ] Manajemen User (undang admin/pelatih)
+- [x] CRUD Akademi (profil, logo, paket)
+- [x] CRUD Kelompok Umur (U-6 s/d U-18)
+- [x] CRUD Master Posisi (GK, DF, MF, FW)
+- [x] CRUD Master Pelanggaran
+- [x] Manajemen User (undang admin/pelatih)
 
 ### 🧑‍🎓 Fase 1 — MVP Operasional
 **Manajemen Siswa**
-- [ ] CRUD data siswa (NISN, NIK, profil lengkap, foto)
-- [ ] Data alamat (provinsi/kabupaten/kecamatan/desa)
-- [ ] Penempatan ke kelompok umur & posisi
-- [ ] Status siswa (aktif/alumni/nonaktif/pending)
-- [ ] Upload dokumen siswa (akta, KK, dll)
-- [ ] Detail & riwayat per siswa
+- [x] CRUD data siswa (NISN, NIK, profil lengkap, foto)
+- [x] Data alamat (provinsi/kabupaten/kecamatan/desa)
+- [x] Penempatan ke kelompok umur & posisi
+- [x] Status siswa (aktif/alumni/nonaktif/pending)
+- [x] Upload dokumen siswa (akta, KK, dll)
+- [x] Detail & riwayat per siswa
 
 **Orang Tua / Wali**
-- [ ] CRUD data orang tua (relasi 1:1 ke siswa)
-- [ ] Kontak ayah/ibu/wali
+- [x] CRUD data orang tua (relasi 1:1 ke siswa)
+- [x] Kontak ayah/ibu/wali
 
 **Manajemen Pelatih**
-- [ ] CRUD data pelatih + foto
-- [ ] Lisensi pelatih (D Nasional, C/B/A/Pro AFC, dll)
-- [ ] Jabatan & penugasan ke kelompok umur
+- [x] CRUD data pelatih + foto
+- [x] Lisensi pelatih (D Nasional, C/B/A/Pro AFC, dll)
+- [x] Jabatan & penugasan ke kelompok umur
 
 **Jadwal Latihan**
-- [ ] CRUD jadwal latihan per kelompok umur
-- [ ] Tampilan kalender
-- [ ] Lokasi & materi per sesi
-- [ ] Status jadwal (aktif/batal/selesai)
+- [x] CRUD jadwal latihan per kelompok umur
+- [x] Tampilan kalender
+- [x] Lokasi & materi per sesi
+- [x] Status jadwal (aktif/batal/selesai)
 
 **Absensi Digital**
-- [ ] Input absensi siswa per sesi (hadir/izin/sakit/alpha)
-- [ ] Rekap harian/mingguan/bulanan
-- [ ] Export Excel/PDF
-- [ ] Alert siswa sering absen
+- [x] Input absensi siswa per sesi (hadir/izin/sakit/alpha)
+- [x] Rekap harian/mingguan/bulanan
+- [x] Export Excel/PDF
+- [x] Alert siswa sering absen
 
 **Dashboard**
-- [ ] Ringkasan total siswa, kehadiran, keuangan
-- [ ] Grafik tren kehadiran
+- [x] Ringkasan total siswa, kehadiran, keuangan
+- [x] Grafik tren kehadiran
 
 ### 💰 Fase 2 — Keuangan & Evaluasi
 **Keuangan / SPP**
-- [ ] Generate tagihan SPP bulanan (scheduler)
-- [ ] Input pembayaran (tunai/transfer/QRIS) + upload bukti
-- [ ] Dukungan cicilan per tagihan
-- [ ] Status lunas/belum/dispensasi
-- [ ] Riwayat pembayaran per siswa
-- [ ] Buku Kas (pemasukan & pengeluaran)
-- [ ] Tabungan siswa (simpan/tarik)
-- [ ] Laporan keuangan bulanan/tahunan
-- [ ] Reminder tunggakan otomatis
+- [x] Generate tagihan SPP bulanan (scheduler)
+- [x] Input pembayaran (tunai/transfer/QRIS) + upload bukti
+- [x] Dukungan cicilan per tagihan
+- [x] Status lunas/belum/dispensasi
+- [x] Riwayat pembayaran per siswa
+- [x] Buku Kas (pemasukan & pengeluaran)
+- [x] Tabungan siswa (simpan/tarik)
+- [x] Laporan keuangan bulanan/tahunan
+- [x] Reminder tunggakan otomatis
 
 **Evaluasi & Rapor**
-- [ ] Evaluasi per aspek (teknik, fisik, taktik, mental)
-- [ ] Catatan pelatih per siswa
-- [ ] Tes fisik (jenis tes, nilai, satuan)
-- [ ] Rapor per semester + grafik perkembangan
-- [ ] Export rapor ke PDF
-- [ ] Pencatatan pelanggaran siswa
+- [x] Evaluasi per aspek (teknik, fisik, taktik, mental)
+- [x] Catatan pelatih per siswa
+- [x] Tes fisik (jenis tes, nilai, satuan)
+- [x] Rapor per semester + grafik perkembangan
+- [x] Export rapor ke PDF
+- [x] Pencatatan pelanggaran siswa
 
 ### 📝 Fase 3 — Pendaftaran & Komunikasi
-- [ ] Form pendaftaran online (link/QR shareable)
-- [ ] Upload dokumen saat daftar
-- [ ] Verifikasi pendaftar oleh admin
-- [ ] Konfirmasi otomatis ke orang tua
-- [ ] Pembayaran registrasi
-- [ ] Pengumuman/broadcast (semua / per kelompok / per role)
-- [ ] Arsip pengumuman
-- [ ] Notifikasi in-app
-- [ ] Integrasi WhatsApp/Email (pilih provider)
-- [ ] Portal orang tua (pantau jadwal, absensi, SPP, rapor)
+- [x] Form pendaftaran online (link/QR shareable)
+- [x] Upload dokumen saat daftar
+- [x] Verifikasi pendaftar oleh admin
+- [x] Konfirmasi otomatis ke orang tua
+- [x] Pembayaran registrasi
+- [x] Pengumuman/broadcast (semua / per kelompok / per role)
+- [x] Arsip pengumuman
+- [x] Notifikasi in-app
+- [x] Integrasi WhatsApp/Email (pilih provider)
+- [x] Portal orang tua (pantau jadwal, absensi, SPP, rapor)
 
 ### 🏆 Fase 4 — Turnamen & Inventaris
-- [ ] CRUD turnamen yang diikuti
-- [ ] Pendaftaran peserta turnamen
-- [ ] Detail match (skor, babak, lokasi)
-- [ ] Lineup pemain per match
-- [ ] Match event (gol, assist, kartu)
-- [ ] Klasemen otomatis (`v_klasemen`)
-- [ ] Statistik & portofolio prestasi
-- [ ] Seleksi pemain (peserta, hasil lulus/tidak)
-- [ ] Manajemen materi latihan / kurikulum (Filanesia)
-- [ ] Log aktivitas pelatih
-- [ ] Manajemen inventaris (jersey, bola, dll)
+- [x] CRUD turnamen yang diikuti
+- [x] Pendaftaran peserta turnamen
+- [x] Detail match (skor, babak, lokasi)
+- [x] Lineup pemain per match
+- [x] Match event (gol, assist, kartu)
+- [x] Klasemen otomatis (`v_klasemen`)
+- [x] Statistik & portofolio prestasi
+- [x] Seleksi pemain (peserta, hasil lulus/tidak)
+- [x] Manajemen materi latihan / kurikulum (Filanesia)
+- [x] Log aktivitas pelatih
+- [x] Manajemen inventaris (jersey, bola, dll)
 
 ### 🚀 Fase 5 — Scale & Monetisasi
-- [ ] Multi-akademi penuh (onboarding mandiri + subdomain/slug)
-- [ ] Super admin / dashboard asosiasi (monitoring antar SSB)
-- [ ] Sistem langganan (gratis/starter/growth/pro)
-- [ ] Integrasi payment gateway untuk langganan
-- [ ] Batasan fitur per paket (feature gating)
-- [ ] API publik untuk integrasi pihak ketiga
-- [ ] Mobile app (PWA / native)
-- [ ] Audit log & backup otomatis
+- [x] Multi-akademi penuh (onboarding mandiri + subdomain/slug)
+- [x] Super admin / dashboard asosiasi (monitoring antar SSB)
+- [x] Sistem langganan (gratis/starter/growth/pro)
+- [x] Integrasi payment gateway untuk langganan
+- [x] Batasan fitur per paket (feature gating)
+- [x] API publik untuk integrasi pihak ketiga
+- [x] Mobile app (PWA / native)
+- [x] Audit log & backup otomatis
 
 ---
 

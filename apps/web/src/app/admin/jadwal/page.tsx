@@ -7,6 +7,7 @@ import { DataTable, ColumnDef } from '@/components/ui/table/data-table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Plus, Edit2, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 const GET_JADWAL = gql`query GetJadwal { jadwalLatihan { id hari waktuMulai waktuSelesai lokasi materi tanggal kelompokUmurId status } }`;
 const GET_KELOMPOK_UMUR = gql`query GetKUJ { kelompokUmur { id nama } }`;
@@ -25,6 +26,7 @@ export default function AdminJadwalPage() {
   const [createJadwal] = useMutation(CREATE_JADWAL);
   const [updateJadwal] = useMutation(UPDATE_JADWAL);
   const [deleteJadwal] = useMutation(DELETE_JADWAL);
+  const { ask, dialog } = useConfirmDialog();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
@@ -36,7 +38,11 @@ export default function AdminJadwalPage() {
 
   const handleOpenCreate = () => { setFormMode('create'); setSelected(null); setF(empty); setDialogOpen(true); };
   const handleOpenEdit = (j: JadwalData) => { setFormMode('edit'); setSelected(j); setF({ hari: j.hari || 'Senin', waktuMulai: j.waktuMulai || '', waktuSelesai: j.waktuSelesai || '', lokasi: j.lokasi || '', materi: j.materi || '', tanggal: j.tanggal || '', kelompokUmurId: j.kelompokUmurId || '', status: j.status }); setDialogOpen(true); };
-  const handleDelete = async (j: JadwalData) => { if (!confirm('Hapus jadwal ini?')) return; try { await deleteJadwal({ variables: { id: j.id } }); toast.success('Dihapus.'); refetch(); } catch (e: any) { toast.error(e?.message); } };
+  const handleDelete = (j: JadwalData) => ask({
+    title: 'Hapus jadwal?',
+    description: `Jadwal latihan ${j.hari || ''} ${j.waktuMulai || ''} akan dihapus permanen.`,
+    onConfirm: async () => { try { await deleteJadwal({ variables: { id: j.id } }); toast.success('Dihapus.'); refetch(); } catch (e: any) { toast.error(e?.message); } },
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setSubmitting(true);
@@ -104,6 +110,7 @@ export default function AdminJadwalPage() {
           </form>
         </DialogContent>
       </Dialog>
+      {dialog}
     </div>
   );
 }

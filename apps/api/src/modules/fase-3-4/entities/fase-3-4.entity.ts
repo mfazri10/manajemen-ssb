@@ -48,3 +48,26 @@ export class Inventaris {
   @Field(() => String, { nullable: true }) keterangan?: string;
   @Field(() => Date, { nullable: true }) createdAt?: Date;
 }
+
+@ObjectType()
+export class InventarisDistribusi {
+  @Field(() => ID) id!: string;
+  @Field(() => String) inventarisId!: string;
+  @Field(() => String, { nullable: true }) siswaId?: string;
+  @Field(() => Int, { defaultValue: 1 }) jumlah!: number;
+  @Field(() => String) tanggal!: string;
+  @Field(() => String, { defaultValue: 'dipinjam' }) status!: string;
+  @Field(() => String, { nullable: true }) keterangan?: string;
+  @Field(() => Date, { nullable: true }) createdAt?: Date;
+}
+
+@ObjectType()
+export class InventarisMutasi {
+  @Field(() => ID) id!: string;
+  @Field(() => String) inventarisId!: string;
+  @Field(() => String) tipe!: string;
+  @Field(() => Int) jumlah!: number;
+  @Field(() => String) tanggal!: string;
+  @Field(() => String, { nullable: true }) keterangan?: string;
+  @Field(() => Date, { nullable: true }) createdAt?: Date;
+}
